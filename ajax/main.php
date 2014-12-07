@@ -7,8 +7,9 @@ switch(@$_POST['op']) {
 	case 'cache_clear':
 		if(!SA)
 			jsonError();
-		query("UPDATE `setup_global` SET `version`=`version`+1");
+
 		_cacheClear();
+
 		jsonSuccess();
 		break;
 
@@ -93,6 +94,36 @@ switch(@$_POST['op']) {
 
 		query("UPDATE `louvers_client` SET `deleted`=1 WHERE `id`=".$client_id);
 		jsonSuccess();
+		break;
+
+	case 'stock_add'://Внесение новой позиции в склад
+		$category_id = _isnum($_POST['category_id']);
+		$name = win1251(htmlspecialchars(trim($_POST['name'])));
+
+		if(empty($name))
+			jsonError();
+
+		$sql = "INSERT INTO `louvers_stock` (
+					`category_id`,
+					`name`
+				) VALUES (
+					".$category_id.",
+					'".addslashes($name)."'
+				)";
+		query($sql);
+
+		$data = stock_spisok();
+		$send['result'] = utf8($data['result']);
+		$send['spisok'] = utf8($data['spisok']);
+		jsonSuccess($send);
+		break;
+	case 'stock_spisok':
+		$_POST['find'] = win1251($_POST['find']);
+		$data = stock_spisok($_POST);
+		if($data['filter']['page'] == 1)
+			$send['result'] = utf8($data['result']);
+		$send['spisok'] = utf8($data['spisok']);
+		jsonSuccess($send);
 		break;
 }
 

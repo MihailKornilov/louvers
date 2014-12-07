@@ -57,8 +57,30 @@
 #stock #td-find{width:400px}
 #stock .vkButton{position:absolute;right:8px;top:1px}
 #stock .result{border-top:#DAE1E8 solid 1px}
+#stock #spisok{margin:10px}
+#stock ._spisok{width:100%}
+#stock em{background-color:#FFC;border-bottom:#FE2 solid 1px}
+#stock .avai{width:50px}
+#stock ._empty{margin:0}
 
 #stock-add-tab{border-spacing:8px}
 #stock-add-tab .label{width:100px;text-align:right}
 #stock-add-tab #name{width:262px}
 #stock-add-tab .img_edit{position:relative;top:-4px;left:5px}
+
+
+
+#setup .left{padding:15px}
+#setup .headName{margin:0 0 15px}
+#setup .right{padding:0;width:170px;border-left:0}
+#setup .rightLink a.sel{border-color:#6B8EB5}
+
+.setup-tab{border-spacing:10px}
+.setup-tab .label{text-align:right}
+.setup-tab #name{width:270px}
+.setup-tab textarea{width:210px;height:70px}
+
+#setup_stock .name{width:350px}
+#setup_stock td.name{cursor:move}
+#setup_stock .del{color:#888;cursor:help}
+#setup_stock .set{width:35px}

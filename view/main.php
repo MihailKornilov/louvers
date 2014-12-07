@@ -54,11 +54,6 @@ function _hashCookieSet() {
 	setcookie('d1', isset($_GET['d1']) ? $_GET['d1'] : '', time() + 2592000, '/');
 	setcookie('id', isset($_GET['id']) ? $_GET['id'] : '', time() + 2592000, '/');
 }//_hashCookieSet()
-function _cacheClear() {
-	xcache_unset(CACHE_PREFIX.'setup_global');
-//	GvaluesCreate();
-//	query("UPDATE `setup_global` SET `script_style`=`script_style`+1");
-}//_cacheClear()
 function _mainLinks() {
 	global $html;
 	$links = array(
@@ -97,6 +92,13 @@ function _mainLinks() {
 	$send .= '</div>';
 	$html .= $send;
 }//_mainLinks()
+function _cacheClear() {
+	xcache_unset(CACHE_PREFIX.'stock_category');
+	xcache_unset(CACHE_PREFIX.'setup_global');
+	GvaluesCreate();
+
+	query("UPDATE `setup_global` SET `version`=`version`+1");
+}//_cacheClear()
 
 function _header() {
 	global $html;
@@ -110,6 +112,8 @@ function _header() {
 
 		_api_scripts().
 
+		'<script type="text/javascript" src="'.APP_HTML.'/js/G_values.js?'.G_VALUES.'"></script>'.
+
 		'<link rel="stylesheet" type="text/css" href="'.APP_HTML.'/css/main'.(DEBUG ? '' : '.min').'.css?'.VERSION.'" />'.
 		'<script type="text/javascript" src="'.APP_HTML.'/js/main'.(DEBUG ? '' : '.min').'.js?'.VERSION.'"></script>'.
 
@@ -118,6 +122,44 @@ function _header() {
 		'<div id="frameBody">'.
 			'<iframe id="frameHidden" name="frameHidden"></iframe>';
 }//_header()
+
+function GvaluesCreate() {//Составление файла G_values.js
+	$save = 'function _toAss(s){var a=[];for(var n=0;n<s.length;a[s[n].uid]=s[n].title,n++);return a}'.
+		"\n".'var STOCK_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_stock_category` ORDER BY `sort` ASC").';';
+
+	$fp = fopen(APP_PATH.'/js/G_values.js', 'w+');
+	fwrite($fp, $save);
+	fclose($fp);
+
+	query("UPDATE `setup_global` SET `g_values`=`g_values`+1");
+	xcache_unset(CACHE_PREFIX.'setup_global');
+}//GvaluesCreate()
+
+function _stockCategory($type_id=false) {//Список изделий для заявок
+	if(!defined('SC_LOADED') || $type_id === false) {
+		$key = CACHE_PREFIX.'stock_category';
+		$arr = xcache_get($key);
+		if(empty($arr)) {
+			$sql = "SELECT * FROM `louvers_setup_stock_category` ORDER BY `sort`";
+			$q = query($sql);
+			while($r = mysql_fetch_assoc($q))
+				$arr[$r['id']] = array(
+					'name' => $r['name']
+				);
+			xcache_set($key, $arr, 86400);
+		}
+		if(!defined('SC_LOADED')) {
+			foreach($arr as $id => $r) {
+				define('SC_'.$id, $r['name']);
+			}
+			define('SC_0', '');
+			define('SC_LOADED', true);
+		}
+	}
+	if($type_id === false)
+		return $arr;
+	return constant('SC_'.$type_id);
+}//_income()
 
 
 function clientBalansUpdate($client_id) {//Обновление баланса клиента
@@ -318,7 +360,90 @@ function client_info() {
 }//client_info()
 
 
+function stockFilter($v) {
+	return array(
+		'page' => !empty($v['page']) && preg_match(REGEXP_NUMERIC, $v['page']) ? intval($v['page']) : 1,
+		'limit' => !empty($v['limit']) && preg_match(REGEXP_NUMERIC, $v['limit']) ? intval($v['limit']) : 100,
+		'sort' => !empty($v['sort']) && preg_match(REGEXP_NUMERIC, $v['sort']) ? intval($v['sort']) : 0,
+		'find' => !empty($v['find']) ? trim($v['find']) : ''
+	);
+}//stockFilter()
+function stock_spisok($v=array()) {
+	$filter = stockFilter($v);
+	$page = $filter['page'];
+	$limit = $filter['limit'];
+	$cond = "`c`.`id`";
+
+	if(!empty($filter['find'])) {
+		$engRus = _engRusChar($filter['find']);
+		$cond .= " AND (`name` LIKE '%".$filter['find']."%' OR `name` LIKE '%".$engRus."%')";
+		$reg = '/('.$filter['find'].')/i';
+	}
+	$sort = "`c`.`id` DESC";
+
+	$all = query_value("SELECT COUNT(`c`.`id`) FROM `louvers_stock` `c` WHERE ".$cond);
+	if(!$all)
+		return array(
+			'all' => 0,
+			'result' => 'Комплектующих не найдено',
+			'spisok' => '<div class="_empty">Комплектующих не найдено</div>',
+			'filter' => $filter
+		);
+
+	$send = array(
+		'all' => $all,
+		'result' => 'Показан'._end($all, 'а ', 'о ').$all.' позици'._end($all, 'я', 'и', 'й'),
+		'spisok' => '',
+		'filter' => $filter
+	);
+
+	$start = ($page - 1) * $limit;
+	$spisok = array();
+	$sql = "SELECT
+	            `c`.*
+			FROM `louvers_stock` `c`
+			WHERE ".$cond."
+			ORDER BY ".$sort."
+			LIMIT ".$start.",".$limit;
+	$q = query($sql);
+	while($r = mysql_fetch_assoc($q)) {
+		if(!empty($filter['find'])) {
+			if(preg_match($reg, $r['name']))
+				$r['name'] = preg_replace($reg, '<em>\\1</em>', $r['name'], 1);
+		}
+		$spisok[$r['id']] = $r;
+	}
+
+	$send['spisok'] =
+		$page == 1 ?
+			'<table class="_spisok _money">'.
+				'<tr><th>Наименование'.
+					'<th>Нал.'
+			: '';
+	foreach($spisok as $id => $r) {
+		$send['spisok'] .=
+			'<tr val="'.$id.'">'.
+				'<td><span class="type">'._stockCategory($r['category_id']).':</span> '.
+					'<a href="'.URL.'&p=stock&d=info&id='.$id.'" class="name">'.$r['name'].'</a>'.
+				'<td class="avai">';
+	}
+
+	if($start + $limit < $all) {
+		$c = $all - $start - $limit;
+		$c = $c > $limit ? $limit : $c;
+		$send['spisok'] .=
+			'<tr class="_next" val="'.($page + 1).'">'.
+			'<td colspan="4">'.
+				'<span>Показать ещё '.$c.' позици'._end($c, 'ю', 'и', 'й').'</span>';
+	}
+
+	$send['spisok'] .= $page == 1 ?  '</table>' : '';
+
+	return $send;
+}//stock_spisok()
 function stock() {
+	$data = stock_spisok();
+	$filter = $data['filter'];
 	return
 	'<div id="stock">'.
 		'<div id="stock-head">'.
@@ -327,11 +452,11 @@ function stock() {
 				'<td><div class="vkButton"><button>Внести новую позицию</button></div>'.
 			'</table>'.
 		'</div>'.
-		'<div class="result">результат</div>'.
-		'<div id="zp-spisok">список</div>'.
+		'<div class="result">'.$data['result'].'</div>'.
+		'<div id="spisok">'.$data['spisok'].'</div>'.
 	'</div>'.
 	'<script type="text/javascript">'.
-		'var ZP={'.
+		'var STOCK={'.
 			'find:""'.
 		'};'.
 	'</script>';
@@ -341,6 +466,68 @@ function report() {
 	return 'report';
 }//report()
 
+
+
+// ---===! setup !===--- Секция настроек
+
 function setup() {
-	return 'setup';
+	$pages = array(
+		'stock' => 'Категории комплектующих'
+	);
+
+	$d = empty($_GET['d']) ? 'stock' : $_GET['d'];
+
+	switch($d) {
+		default: $d = 'stock';
+		case 'stock': $left = setup_stock(); break;
+	}
+	$links = '';
+	foreach($pages as $p => $name)
+		$links .= '<a href="'.URL.'&p=setup&d='.$p.'"'.($d == $p ? ' class="sel"' : '').'>'.$name.'</a>';
+	return
+		'<div id="setup">'.
+			'<table class="tabLR">'.
+				'<tr><td class="left">'.$left.
+					'<td class="right"><div class="rightLink">'.$links.'</div>'.
+			'</table>'.
+		'</div>';
 }//setup()
+
+function setup_stock() {
+	return
+	'<div id="setup_stock">'.
+		'<div class="headName">Настройка категорий комплектующих<a class="add">Добавить</a></div>'.
+		'<div class="spisok">'.setup_stock_spisok().'</div>'.
+	'</div>';
+}//setup_stock()
+function setup_stock_spisok() {
+	$sql = "SELECT *
+			FROM `louvers_setup_stock_category`
+			ORDER BY `sort`";
+	$q = query($sql);
+	if(!mysql_num_rows($q))
+		return 'Список пуст.';
+
+	$income = array();
+	while($r = mysql_fetch_assoc($q))
+		$income[$r['id']] = $r;
+
+	$send =
+		'<table class="_spisok">'.
+			'<tr><th class="name">Наименование'.
+				'<th class="set">'.
+		'</table>'.
+		'<dl class="_sort" val="louvers_setup_stock_category">';
+	foreach($income as $id => $r) {
+		$send .='<dd val="'.$id.'">'.
+			'<table class="_spisok">'.
+				'<tr><td class="name">'.$r['name'].
+					'<td class="set">'.
+						'<div class="img_edit'._tooltip('Изменить', -33).'</div>'.
+						'<div class="img_del'._tooltip('Удалить', -29).'</div>'.
+			'</table>';
+	}
+	$send .= '</dl>';
+	return $send;
+}//setup_stock_spisok()
+

@@ -1,4 +1,5 @@
-var hashLoc,
+var AJAX_SETUP = APP_HTML + '/ajax/setup.php?' + VALUES,
+	hashLoc,
 	hashSet = function(hash) {
 		if(!hash && !hash.p)
 			return;
@@ -105,9 +106,26 @@ var hashLoc,
 				$('.left').html(res.spisok);
 			}
 		}, 'json');
+	},
+
+	stockFilter = function() {
+		var v = {
+				op:'stock_spisok',
+				find:$.trim($('#find')._search('val'))
+			},
+			loc = '';
+		return v;
+	},
+	stockSpisok = function() {
+		$('#mainLinks').addClass('busy');
+		$.post(AJAX_MAIN, stockFilter(), function (res) {
+			$('#mainLinks').removeClass('busy');
+			$('.result').html(res.result);
+			$('#spisok').html(res.spisok);
+		}, 'json');
 	};
 
-$.fn.clientSel = function(o) {
+	$.fn.clientSel = function(o) {
 	var t = $(this);
 	o = $.extend({
 		width:270,
@@ -232,6 +250,126 @@ $(document)
 	})
 
 
+	.on('click', '#setup_stock .add', function() {
+		var t = $(this),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Наименование:<td><input id="name" type="text" maxlength="200" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Добавление нового категории',
+				content:html,
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'stock_add',
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указано наименование</SPAN>',
+					top:-47,
+					left:120,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('.spisok').html(res.html);
+						dialog.close();
+						_msg('Внесено!');
+						sortable();
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '#setup_stock .img_edit', function() {
+		var t = $(this);
+		while(t[0].tagName != 'DD')
+			t = t.parent();
+		var id = t.attr('val'),
+			name = t.find('.name').html(),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Наименование:' +
+					'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Редактирование категории',
+				content:html,
+				butSubmit:'Сохранить',
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'stock_edit',
+				id:id,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указано наименование</SPAN>',
+					top:-47,
+					left:131,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('.spisok').html(res.html);
+						dialog.close();
+						_msg('Сохранено!');
+						sortable();
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '#setup_stock .img_del', function() {
+		var t = $(this),
+			dialog = _dialog({
+				top:90,
+				width:300,
+				head:'Удаление вида платежа',
+				content:'<center><b>Подтвердите удаление категории.</b></center>',
+				butSubmit:'Удалить',
+				submit:submit
+			});
+		function submit() {
+			while(t[0].tagName != 'DD')
+				t = t.parent();
+			var send = {
+				op:'stock_del',
+				id:t.attr('val')
+			};
+			dialog.process();
+			$.post(AJAX_SETUP, send, function(res) {
+				if(res.success) {
+					$('.spisok').html(res.html);
+					dialog.close();
+					_msg('Удалено!');
+					sortable();
+				} else
+					dialog.abort();
+			}, 'json');
+		}
+	})
+
+
 	.ready(function() {
 		if($('#client').length) {
 			$('#find')._search({
@@ -331,7 +469,7 @@ $(document)
 					'<table id="stock-add-tab">' +
 						'<tr><td class="label">Категория:' +
 							'<td><input type="hidden" id="category_id" />' +
-								'<div class="img_edit' + _tooltip('Настроить категорию комплектующих', -120) + '</div>' +
+								'<a href="' + URL + '&p=setup&d=stock" class="img_edit' + _tooltip('Настроить категорию комплектующих', -120) + '</a>' +
 						'<tr><td class="label">Наименование:<td><input type="text" id="name" />' +
 					'</table>',
 					dialog = _dialog({
@@ -344,7 +482,7 @@ $(document)
 				$('#category_id')._select({
 					width:270,
 					title0:'Категория не выбрана',
-					spisok:[]
+					spisok:STOCK_SPISOK
 				});
 				$('#name').focus();
 
@@ -354,29 +492,16 @@ $(document)
 						category_id:$('#category_id').val(),
 						name:$.trim($('#name').val())
 					};
-					if(send.name_id == 0) err('Не указано наименование запчасти');
-					else if(send.device_id == 0) err('Не выбрано устройство');
-					else if(send.vendor_id == 0) err('Не выбран производитель');
-					else if(send.model_id == 0) err('Не выбрана модель');
+					if(!send.name) err('Не указано наименование');
 					else {
 						dialog.process();
-						$.post(AJAX_WS, send, function(res) {
+						$.post(AJAX_MAIN, send, function(res) {
 							dialog.abort();
 							if(res.success) {
 								dialog.close();
-								$('#zp_name')._select(send.name_id);
-								$('#dev').device({
-									width:220,
-									type_no:1,
-									device_ids:WS_DEVS,
-									device_id:send.device_id,
-									vendor_id:send.vendor_id,
-									model_id:send.model_id,
-									func:zpSpisok
-								});
-								zpSpisok();
+								stockSpisok();
 							}
-						},'json');
+						}, 'json');
 					}
 				}
 				function err(msg) {
@@ -395,9 +520,9 @@ $(document)
 					width:250,
 					focus:1,
 					txt:'Быстрый поиск...',
-					enter:1
+					enter:1,
+					func:stockSpisok
 				})
-				.inp(ZP.find);
-//			zpFilter();
+				.inp(STOCK.find);
 		}
 	});
