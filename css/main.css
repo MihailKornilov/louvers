@@ -1,0 +1,64 @@
+#go-evrookna{
+	font-weight:bold;
+	float:right;
+	cursor:pointer;
+	color:#bbb;
+	margin:15px 5px 0 0;
+}
+#go-evrookna:hover{color:#2B587A;text-decoration:underline}
+
+#client #find{background-color:#F7F7F7;padding:10px;border-bottom:#dae1e8 solid 1px}
+#client .result.busy{background-position:585px center}
+#client #filter_clear{float:right}
+#client .result.busy #filter_clear{display:none}
+#client .left{padding-bottom:10px}
+#client .unit{margin:5px 10px 0 10px;border-bottom:#dae1e8 solid 1px;padding:3px}
+#client .unit table{border-spacing:3px}
+#client .label{width:80px}
+#client .balans{float:right;width:90px;color:#888}
+#client .balans b{float:right}
+#client .unit em{background-color:#FFC;border-bottom:#FE2 solid 1px}
+#client .unit.i{
+	background:url("data:image/gif;base64,R0lGODlhDgAOAKIAAAAAAP///9Pd6GuNsf///wAAAAAAAAAAACH5BAEAAAQALAAAAAAOAA4AAAMiSLoi+681CKWjyk68d+0eA17iSBJWJpVairraC7d0K9dOAgA7") no-repeat 428px 21px;
+}
+#client ._next{margin:0 10px}
+
+
+/* Внесение нового клиента */
+.client-add{border-spacing:10px}
+.client-add .label{width:130px;text-align:right}
+.client-add #ca-org,
+.client-add #ca-fio,
+.client-add #ca-telefon,
+.client-add #ca-adres
+{width:240px}
+
+
+/* Информация о клиенте */
+#client-info ._info{
+	margin:10px;
+	font-weight:bold;
+	text-align:center;
+	background-color:#fee;
+	color:red;
+	border:#ecc solid 1px;
+}
+#client-info .org{color:#31618C;font-size:12px;font-weight:bold;margin:15px 5px 5px 20px}
+#client-info .tab{border-spacing:4px;margin:0 10px 0 26px}
+#client-info .tab .label{width:100px}
+#client-info .dtime_add{font-size:10px;color:#999;text-align:right;margin:10px}
+#client-info .cdel{color:red}
+
+
+
+#stock{min-height:500px}
+#stock #stock-head{padding:7px 0 7px 5px;background-color:#f7f7f7}
+#stock #head-t{width:100%;position:relative}
+#stock #td-find{width:400px}
+#stock .vkButton{position:absolute;right:8px;top:1px}
+#stock .result{border-top:#DAE1E8 solid 1px}
+
+#stock-add-tab{border-spacing:8px}
+#stock-add-tab .label{width:100px;text-align:right}
+#stock-add-tab #name{width:262px}
+#stock-add-tab .img_edit{position:relative;top:-4px;left:5px}
