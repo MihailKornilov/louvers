@@ -125,7 +125,8 @@ function _header() {
 
 function GvaluesCreate() {//Составление файла G_values.js
 	$save = 'function _toAss(s){var a=[];for(var n=0;n<s.length;a[s[n].uid]=s[n].title,n++);return a}'.
-		"\n".'var STOCK_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_stock_category` ORDER BY `sort` ASC").';';
+		"\n".'var STOCK_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_stock_category` ORDER BY `sort` ASC").','.
+		"\n".'MEASURE_SPISOK=[{uid:1,title:"шт"},{uid:2,title:"м"}];';
 
 	$fp = fopen(APP_PATH.'/js/G_values.js', 'w+');
 	fwrite($fp, $save);

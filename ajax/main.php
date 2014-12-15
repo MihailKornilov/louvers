@@ -99,16 +99,23 @@ switch(@$_POST['op']) {
 	case 'stock_add'://Внесение новой позиции в склад
 		$category_id = _isnum($_POST['category_id']);
 		$name = win1251(htmlspecialchars(trim($_POST['name'])));
+		if(!$measure = _isnum($_POST['measure']))
+			jsonError();
+		$expense = _isnum($_POST['expense']);
 
 		if(empty($name))
 			jsonError();
 
 		$sql = "INSERT INTO `louvers_stock` (
 					`category_id`,
-					`name`
+					`name`,
+					`measure`,
+					`expense`
 				) VALUES (
 					".$category_id.",
-					'".addslashes($name)."'
+					'".addslashes($name)."',
+					'".$measure."',
+					'".$expense."'
 				)";
 		query($sql);
 

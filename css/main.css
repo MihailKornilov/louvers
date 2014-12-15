@@ -64,9 +64,10 @@
 #stock ._empty{margin:0}
 
 #stock-add-tab{border-spacing:8px}
-#stock-add-tab .label{width:100px;text-align:right}
+#stock-add-tab .label{width:110px;text-align:right}
 #stock-add-tab #name{width:262px}
 #stock-add-tab .img_edit{position:relative;top:-4px;left:5px}
+#stock-add-tab #expense{width:40px}
 
 
 

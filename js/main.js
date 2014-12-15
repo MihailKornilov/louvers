@@ -469,8 +469,10 @@ $(document)
 					'<table id="stock-add-tab">' +
 						'<tr><td class="label">Категория:' +
 							'<td><input type="hidden" id="category_id" />' +
-								'<a href="' + URL + '&p=setup&d=stock" class="img_edit' + _tooltip('Настроить категорию комплектующих', -120) + '</a>' +
+								'<a href="' + URL + '&p=setup&d=stock" class="img_edit' + _tooltip('Настроить категорию комплектующих', -220, 'r') + '</a>' +
 						'<tr><td class="label">Наименование:<td><input type="text" id="name" />' +
+						'<tr><td class="label">Единица измерения:<td><input type="hidden" id="measure" />' +
+						'<tr><td class="label">Расход на м&sup2;:<td><input type="text" id="expense" />' +
 					'</table>',
 					dialog = _dialog({
 						top:70,
@@ -481,8 +483,13 @@ $(document)
 					});
 				$('#category_id')._select({
 					width:270,
-					title0:'Категория не выбрана',
+					title0:'Не выбрана',
 					spisok:STOCK_SPISOK
+				});
+				$('#measure')._select({
+					width:90,
+					title0:'Не указана',
+					spisok:MEASURE_SPISOK
 				});
 				$('#name').focus();
 
@@ -490,9 +497,13 @@ $(document)
 					var send = {
 						op:'stock_add',
 						category_id:$('#category_id').val(),
-						name:$.trim($('#name').val())
+						name:$.trim($('#name').val()),
+						measure:$('#measure').val() * 1,
+						expense:$.trim($('#expense').val())
 					};
 					if(!send.name) err('Не указано наименование');
+					else if(!send.measure) err('Не указана единица измерения');
+					else if(send.expense && !REGEXP_NUMERIC.test(send.expense)) err('Некорректно указан расход на м&sup2;');
 					else {
 						dialog.process();
 						$.post(AJAX_MAIN, send, function(res) {
@@ -507,7 +518,7 @@ $(document)
 				function err(msg) {
 					dialog.bottom.vkHint({
 						msg:'<SPAN class="red">' + msg + '</SPAN>',
-						left:110,
+						left:130,
 						top:-47,
 						indent:50,
 						show:1,
