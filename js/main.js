@@ -250,7 +250,7 @@ $(document)
 	})
 
 
-	.on('click', '#setup_stock .add', function() {
+	.on('click', '#setup_category .add', function() {
 		var t = $(this),
 			html = '<table class="setup-tab">' +
 				'<tr><td class="label r">Наименование:<td><input id="name" type="text" maxlength="200" />' +
@@ -264,7 +264,7 @@ $(document)
 		$('#name').focus().keyEnter(submit);
 		function submit() {
 			var send = {
-				op:'stock_add',
+				op:'category_add',
 				name:$('#name').val()
 			};
 			if(!send.name) {
@@ -291,7 +291,7 @@ $(document)
 			}
 		}
 	})
-	.on('click', '#setup_stock .img_edit', function() {
+	.on('click', '#setup_category .img_edit', function() {
 		var t = $(this);
 		while(t[0].tagName != 'DD')
 			t = t.parent();
@@ -311,7 +311,7 @@ $(document)
 		$('#name').focus().keyEnter(submit);
 		function submit() {
 			var send = {
-				op:'stock_edit',
+				op:'category_edit',
 				id:id,
 				name:$('#name').val()
 			};
@@ -339,12 +339,12 @@ $(document)
 			}
 		}
 	})
-	.on('click', '#setup_stock .img_del', function() {
+	.on('click', '#setup_category .img_del', function() {
 		var t = $(this),
 			dialog = _dialog({
 				top:90,
 				width:300,
-				head:'Удаление вида платежа',
+				head:'Удаление категории',
 				content:'<center><b>Подтвердите удаление категории.</b></center>',
 				butSubmit:'Удалить',
 				submit:submit
@@ -353,7 +353,7 @@ $(document)
 			while(t[0].tagName != 'DD')
 				t = t.parent();
 			var send = {
-				op:'stock_del',
+				op:'category_del',
 				id:t.attr('val')
 			};
 			dialog.process();
@@ -361,7 +361,7 @@ $(document)
 				if(res.success) {
 					$('.spisok').html(res.html);
 					dialog.close();
-					_msg('Удалено!');
+					_msg('Удалено.');
 					sortable();
 				} else
 					dialog.abort();

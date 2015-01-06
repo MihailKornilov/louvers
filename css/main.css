@@ -81,7 +81,7 @@
 .setup-tab #name{width:270px}
 .setup-tab textarea{width:210px;height:70px}
 
-#setup_stock .name{width:350px}
-#setup_stock td.name{cursor:move}
-#setup_stock .del{color:#888;cursor:help}
-#setup_stock .set{width:35px}
+#setup_category .name{width:350px}
+#setup_category td.name{cursor:move}
+#setup_category .del{color:#888;cursor:help}
+#setup_category .set{width:35px}

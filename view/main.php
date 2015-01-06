@@ -125,7 +125,7 @@ function _header() {
 
 function GvaluesCreate() {//Составление файла G_values.js
 	$save = 'function _toAss(s){var a=[];for(var n=0;n<s.length;a[s[n].uid]=s[n].title,n++);return a}'.
-		"\n".'var STOCK_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_stock_category` ORDER BY `sort` ASC").','.
+		"\n".'var CATEGORY_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_category` ORDER BY `sort` ASC").','.
 		"\n".'MEASURE_SPISOK=[{uid:1,title:"шт"},{uid:2,title:"м"}];';
 
 	$fp = fopen(APP_PATH.'/js/G_values.js', 'w+');
@@ -463,6 +463,37 @@ function stock() {
 	'</script>';
 }//stock()
 
+function stock_info() {
+	if(!$id = _isnum(@$_GET['id']))
+		return _noauth('Страницы не существует');
+
+	$sql = "SELECT * FROM `louvers_stock` WHERE `id`=".$id;
+	if(!$si = query_assoc($sql))
+		return _noauth('Страницы не существует');
+	_pre($si);
+	$avai = 0;
+	return
+	'<div id="stock-info">'.
+		'<table class="si-tab">'.
+			'<tr><td class="left">'.
+					'<div class="name">'.'</div>'.
+					'<div class="avai'.($avai ? '' : ' no').'">'.($avai ? 'В наличии '.$avai.' шт.' : 'Нет в наличии.').'</div>'.
+					'<div class="added">Добавлено в каталог '.FullData($si['dtime_add'], 1).'</div>'.
+					'<div class="headBlue">Движение</div>'.
+					'<div class="move">'.'</div>'.
+				'<td class="right">'.
+					'<div id="foto">'.
+
+					'</div>'.
+					'<div class="rightLink">'.
+						'<a class="edit">Редактировать</a>'.
+						'<a class="avai_add">Внести наличие</a>'.
+					'</div>'.
+		'</table>'.
+	'</div>';
+
+}//stock_info()
+
 function report() {
 	return 'report';
 }//report()
@@ -473,14 +504,14 @@ function report() {
 
 function setup() {
 	$pages = array(
-		'stock' => 'Категории комплектующих'
+		'category' => 'Категории жалюзей'
 	);
 
-	$d = empty($_GET['d']) ? 'stock' : $_GET['d'];
+	$d = empty($_GET['d']) ? 'category' : $_GET['d'];
 
 	switch($d) {
-		default: $d = 'stock';
-		case 'stock': $left = setup_stock(); break;
+		default: $d = 'category';
+		case 'category': $left = setup_category(); break;
 	}
 	$links = '';
 	foreach($pages as $p => $name)
@@ -494,16 +525,16 @@ function setup() {
 		'</div>';
 }//setup()
 
-function setup_stock() {
+function setup_category() {
 	return
-	'<div id="setup_stock">'.
-		'<div class="headName">Настройка категорий комплектующих<a class="add">Добавить</a></div>'.
-		'<div class="spisok">'.setup_stock_spisok().'</div>'.
+	'<div id="setup_category">'.
+		'<div class="headName">Настройка категорий жалюзей<a class="add">Добавить</a></div>'.
+		'<div class="spisok">'.setup_category_spisok().'</div>'.
 	'</div>';
-}//setup_stock()
-function setup_stock_spisok() {
+}//setup_category()
+function setup_category_spisok() {
 	$sql = "SELECT *
-			FROM `louvers_setup_stock_category`
+			FROM `louvers_setup_category`
 			ORDER BY `sort`";
 	$q = query($sql);
 	if(!mysql_num_rows($q))
@@ -518,7 +549,7 @@ function setup_stock_spisok() {
 			'<tr><th class="name">Наименование'.
 				'<th class="set">'.
 		'</table>'.
-		'<dl class="_sort" val="louvers_setup_stock_category">';
+		'<dl class="_sort" val="louvers_setup_category">';
 	foreach($income as $id => $r) {
 		$send .='<dd val="'.$id.'">'.
 			'<table class="_spisok">'.
@@ -530,5 +561,5 @@ function setup_stock_spisok() {
 	}
 	$send .= '</dl>';
 	return $send;
-}//setup_stock_spisok()
+}//setup_category_spisok()
 

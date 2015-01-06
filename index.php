@@ -59,7 +59,12 @@ switch($_GET['p']) {
 				$html .= zayav_list($v);
 		}
 		break;
-	case 'stock': $html .= stock(); break;
+	case 'stock':
+		switch(@$_GET['d']) {
+			case 'info': $html .= stock_info(); break;
+			default: $html .= stock();
+		}
+		break;
 	case 'report': $html .= report(); break;
 	case 'setup': $html .= setup(); break;
 
