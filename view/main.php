@@ -93,7 +93,8 @@ function _mainLinks() {
 	$html .= $send;
 }//_mainLinks()
 function _cacheClear() {
-	xcache_unset(CACHE_PREFIX.'stock_category');
+	xcache_unset(CACHE_PREFIX.'category');
+	xcache_unset(CACHE_PREFIX.'category_sub');
 	xcache_unset(CACHE_PREFIX.'setup_global');
 	GvaluesCreate();
 
@@ -126,7 +127,20 @@ function _header() {
 function GvaluesCreate() {//Составление файла G_values.js
 	$save = 'function _toAss(s){var a=[];for(var n=0;n<s.length;a[s[n].uid]=s[n].title,n++);return a}'.
 		"\n".'var CATEGORY_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_category` ORDER BY `sort` ASC").','.
-		"\n".'MEASURE_SPISOK=[{uid:1,title:"шт"},{uid:2,title:"м"}];';
+		"\n".'MEASURE_SPISOK=[{uid:1,title:"шт"},{uid:2,title:"м"}],';
+
+	$sql = "SELECT * FROM `louvers_setup_category_sub` ORDER BY `category_id`,`name`";
+	$q = query($sql);
+	$sub = array();
+	while($r = mysql_fetch_assoc($q)) {
+		if(!isset($sub[$r['category_id']]))
+			$sub[$r['category_id']] = array();
+		$sub[$r['category_id']][] = '{uid:'.$r['id'].',title:"'.$r['name'].'"}';
+	}
+	$v = array();
+	foreach($sub as $n => $sp)
+		$v[] = $n.':['.implode(',', $sp).']';
+	$save .= "\n".'CATEGORY_SUB_SPISOK={'.implode(',', $v).'};';
 
 	$fp = fopen(APP_PATH.'/js/G_values.js', 'w+');
 	fwrite($fp, $save);
@@ -511,7 +525,12 @@ function setup() {
 
 	switch($d) {
 		default: $d = 'category';
-		case 'category': $left = setup_category(); break;
+		case 'category':
+			if($id = _isnum(@$_GET['id']))
+				$left = setup_category_sub($id);
+			else
+				$left = setup_category();
+			break;
 	}
 	$links = '';
 	foreach($pages as $p => $name)
@@ -533,9 +552,13 @@ function setup_category() {
 	'</div>';
 }//setup_category()
 function setup_category_spisok() {
-	$sql = "SELECT *
-			FROM `louvers_setup_category`
-			ORDER BY `sort`";
+	$sql = "SELECT `c`.*,
+				   COUNT(`cs`.`id`) AS `sub`
+			FROM `louvers_setup_category` AS `c`
+			  LEFT JOIN `louvers_setup_category_sub` AS `cs`
+			  ON `c`.`id`=`cs`.`category_id`
+			GROUP BY `c`.`id`
+			ORDER BY `c`.`sort`";
 	$q = query($sql);
 	if(!mysql_num_rows($q))
 		return 'Список пуст.';
@@ -547,13 +570,15 @@ function setup_category_spisok() {
 	$send =
 		'<table class="_spisok">'.
 			'<tr><th class="name">Наименование'.
+				'<th class="sub">Подкатегории'.
 				'<th class="set">'.
 		'</table>'.
 		'<dl class="_sort" val="louvers_setup_category">';
 	foreach($income as $id => $r) {
 		$send .='<dd val="'.$id.'">'.
 			'<table class="_spisok">'.
-				'<tr><td class="name">'.$r['name'].
+				'<tr><td class="name"><a href="'.URL.'&p=setup&d=categorysub&id='.$id.'">'.$r['name'].'</a>'.
+					'<td class="sub">'.($r['sub'] ? $r['sub'] : '').
 					'<td class="set">'.
 						'<div class="img_edit'._tooltip('Изменить', -33).'</div>'.
 						'<div class="img_del'._tooltip('Удалить', -29).'</div>'.
@@ -563,3 +588,38 @@ function setup_category_spisok() {
 	return $send;
 }//setup_category_spisok()
 
+function setup_category_sub($id) {
+	$sql = "SELECT * FROM `louvers_setup_category` WHERE `id`=".$id;
+	if(!$r = query_assoc($sql))
+		return 'Подкатегории не существует.';
+
+	return
+	'<script type="text/javascript">var CATEGORY_ID='.$id.';</script>'.
+	'<div id="setup_categorysub">'.
+		'<a href="'.URL.'&p=setup&d=category"><< назад к категориям жалюзей</a>'.
+		'<div class="headName">'.$r['name'].'<a class="add">Добавить</a></div>'.
+		'<div class="spisok">'.setup_category_sub_spisok($id).'</div>'.
+	'</div>';
+}//setup_categorysub()
+function setup_category_sub_spisok($id) {
+	$sql = "SELECT *
+			FROM `louvers_setup_category_sub`
+			WHERE `category_id`=".$id."
+			ORDER BY `name`";
+	$q = query($sql);
+	if(!mysql_num_rows($q))
+		return 'Список пуст.';
+
+	$send = '<table class="_spisok">'.
+		'<tr><th>Наименование'.
+			'<th>Кол-во<br />заявок'.
+			'<th>';
+	while($r = mysql_fetch_assoc($q))
+		$send .= '<tr val="'.$r['id'].'">'.
+			'<td class="name">'.$r['name'].
+			'<td class="zayav">'.
+			'<td><div class="img_edit"></div>'.
+				'<div class="img_del"></div>';
+	$send .= '</table>';
+	return $send;
+}//setup_categorysub_spisok()

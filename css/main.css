@@ -50,6 +50,23 @@
 #client-info .cdel{color:red}
 
 
+/* Внесение новой заявки */
+.zayav-add{border-spacing:12px;margin-bottom:30px}
+.zayav-add .label{width:70px;text-align:right}
+.zayav-add #comm{width:260px;height:40px}
+
+/* Категории изделий при внесении заявки */
+._product-list .ptab{padding-bottom:15px}
+._product-list .td{vertical-align:top}
+._product-list ._select{margin-right:5px}
+._product-list .doptab{border-spacing:3px}
+._product-list .lab{font-size:10px;color:#555;text-align:right}
+._product-list .size_x{width:30px}
+._product-list .size_y{width:30px}
+._product-list .count{width:20px}
+._product-list .img_del{margin:6px 0 0 6px}
+._product-list .add{display:inline-block;text-align:center;padding:4px 0 8px}
+
 
 #stock{min-height:500px}
 #stock #stock-head{padding:7px 0 7px 5px;background-color:#f7f7f7}
@@ -81,7 +98,11 @@
 .setup-tab #name{width:270px}
 .setup-tab textarea{width:210px;height:70px}
 
-#setup_category .name{width:350px}
+#setup_category .name{width:250px}
 #setup_category td.name{cursor:move}
+#setup_category .sub{width:100px;text-align:center;font-weight:bold}
 #setup_category .del{color:#888;cursor:help}
 #setup_category .set{width:35px}
+
+#setup_categorysub .headName{margin-top:15px}
+#setup_categorysub .name{width:250px}

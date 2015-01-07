@@ -125,7 +125,7 @@ var AJAX_SETUP = APP_HTML + '/ajax/setup.php?' + VALUES,
 		}, 'json');
 	};
 
-	$.fn.clientSel = function(o) {
+$.fn.clientSel = function(o) {
 	var t = $(this);
 	o = $.extend({
 		width:270,
@@ -175,6 +175,93 @@ var AJAX_SETUP = APP_HTML + '/ajax/setup.php?' + VALUES,
 				}
 			}
 		}, 'json');
+	}
+	return t;
+};
+$.fn.productList = function(o) {
+	var t = $(this),
+		id = t.attr('id'),
+		num = 1,
+		n;
+
+	if(typeof o == 'string') {
+		if(o == 'get') {
+			var units = t.find('.ptab'),
+				send = [];
+			for(n = 0; n < units.length; n++) {
+				var u = units.eq(n),
+					attr = id + u.attr('val'),
+					pr = $('#' + attr + 'id').val(),
+					prsub = $('#' + attr + 'subid').val(),
+					count = $('#' + attr + 'count').val();
+				if(pr == 0)
+					continue;
+				if(!REGEXP_NUMERIC.test(count) || count == 0)
+					return 'count_error';
+				send.push(pr + ':' + prsub + ':' + count);
+			}
+			return send.length == 0 ? false : send.join();
+		}
+	}
+
+	t.html('<div class="_product-list"><a class="add">Добавить поле</a></div>');
+	var add = t.find('.add');
+	add.click(itemAdd);
+
+	if(typeof o == 'object')
+		for(n = 0; n < o.length; n++)
+			itemAdd(o[n])
+	else
+		itemAdd([]);
+
+	function itemAdd(v) {
+		var attr = id + num,
+			attr_id = attr + 'id',
+			attr_subid = attr + 'subid',
+			attr_count = attr + 'count',
+			html = '<table id="ptab'+ num + '" class="ptab" val="'+ num + '"><tr>' +
+				'<td class="td">' +
+					'<input type="hidden" id="' + attr_id + '" value="' + (v[0] || 0) + '" />' +
+					'<input type="hidden" id="' + attr_subid + '" value="' + (v[1] || 0) + '" />' +
+					'<table class="doptab">' +
+						'<tr><td class="lab">Ширина:<td><input type="text" class="size_x" /> м.' +
+						'<tr><td class="lab">Высота:<td><input type="text" class="size_y" /> м.' +
+						'<tr><td class="lab">Количество:<td><input type="text" id="' + attr_count + '" value="' + (v[2] || '') + '" class="count" maxlength="3" /> шт.' +
+					'</table>' +
+				'<td class="td">' + (num > 1 ? '<div class="img_del"></div>' : '') +
+				'</table>';
+		add.before(html);
+		var ptab = $('#ptab' + num);
+		ptab.find('.img_del').click(function() {
+			ptab.remove();
+		});
+		$('#' + attr_id)._select({
+			width:170,
+			title0:'Не указано',
+			spisok:CATEGORY_SPISOK,
+			func:function(id) {
+				$('#' + attr_subid)
+					._select('remove')
+					.val(0);
+				if(id > 0 && CATEGORY_SUB_SPISOK[id])
+					subSel(id, attr_subid, attr_count);
+				$('#' + attr_count).val(id > 0 ? 1 : '').focus();
+			}
+		});
+		subSel(v[0] || 0, attr_subid, attr_count);
+		num++;
+	}
+	function subSel(id, attr_subid, attr_count) {
+		if(id == 0 || !CATEGORY_SUB_SPISOK[id])
+			return;
+		$('#' + attr_subid)._select({
+			width:160,
+			title0:'Подкатегория не указана',
+			spisok:CATEGORY_SUB_SPISOK[id],
+			func:function() {
+				$('#' + attr_count).focus();
+			}
+		});
 	}
 	return t;
 };
@@ -249,6 +336,65 @@ $(document)
 		clientSpisok();
 	})
 
+	.on('click', '.zayav_add', function() {
+		if(!window.CLIENT)
+			CLIENT = {
+				id:0,
+				fio:''
+			};
+		var html =
+			'<table class="zayav-add">' +
+				'<tr><td class="label">Клиент:' +
+					'<td><INPUT type="hidden" id="client_id" value="' + CLIENT.id + '">' +
+						'<b>' + CLIENT.fio + '</b>' +
+				'<tr><td class="label topi">Изделия:<td id="product">' +
+				'<tr><td class="label top">Заметка:	<td><textarea id="comm"></textarea>' +
+			'</table>',
+			dialog = _dialog({
+				width:550,
+				top:30,
+				head:'Внесение новой заявки',
+				content:html,
+				submit:submit
+			});
+		if(!CLIENT.id)
+			$('#client_id').clientSel({add:1});
+		$('#product').productList();
+		$('#comm').autosize();
+		function submit() {
+			var msg,
+				send = {
+					op:'zakaz_add',
+					client_id:$('#client_id').val(),
+					product:$('#product').productList('get'),
+					zakaz_txt:$('#zakaz_txt').val(),
+					comm:$('#comm').val()
+				};
+			if(send.client_id == 0) msg = 'Не выбран клиент';
+			else if(send.product == 'count_error') msg = 'Некорректно введено количество изделий';
+			else {
+				dialog.process();
+				$.post(AJAX_MAIN, send, function(res) {
+					if(res.success) {
+						dialog.close();
+						_msg('Заявка внесена');
+						location.href = URL + '&p=zayav&d=info&id=' + res.id;
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+			if(msg)
+				dialog.bottom.vkHint({
+					msg:'<SPAN class="red">' + msg + '</SPAN>',
+					top:-48,
+					left:171,
+					indent:50,
+					show:1,
+					remove:1
+				});
+		}
+	})
+
 
 	.on('click', '#setup_category .add', function() {
 		var t = $(this),
@@ -257,7 +403,7 @@ $(document)
 				'</table>',
 			dialog = _dialog({
 				width:440,
-				head:'Добавление нового категории',
+				head:'Добавление новой категории',
 				content:html,
 				submit:submit
 			});
@@ -296,7 +442,7 @@ $(document)
 		while(t[0].tagName != 'DD')
 			t = t.parent();
 		var id = t.attr('val'),
-			name = t.find('.name').html(),
+			name = t.find('.name a').html(),
 			html = '<table class="setup-tab">' +
 				'<tr><td class="label r">Наименование:' +
 					'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
@@ -369,6 +515,122 @@ $(document)
 		}
 	})
 
+	.on('click', '#setup_categorysub .add', function() {
+		var t = $(this),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Наименование:<td><input id="name" type="text" maxlength="200" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Добавление новой подкатегории',
+				content:html,
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'categorysub_add',
+				category_id:CATEGORY_ID,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указано наименование</SPAN>',
+					top:-47,
+					left:120,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('.spisok').html(res.html);
+						dialog.close();
+						_msg('Внесено.');
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '#setup_categorysub .img_edit', function() {
+		var t = $(this);
+		while(t[0].tagName != 'TR')
+			t = t.parent();
+		var id = t.attr('val'),
+			name = t.find('.name').html(),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Наименование:' +
+				'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Редактирование подкатегории',
+				content:html,
+				butSubmit:'Сохранить',
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'categorysub_edit',
+				id:id,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указано наименование</SPAN>',
+					top:-47,
+					left:131,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('.spisok').html(res.html);
+						dialog.close();
+						_msg('Сохранено.');
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '#setup_categorysub .img_del', function() {
+		var t = $(this),
+			dialog = _dialog({
+				top:90,
+				width:300,
+				head:'Удаление подкатегории',
+				content:'<center><b>Подтвердите удаление.</b></center>',
+				butSubmit:'Удалить',
+				submit:submit
+			});
+		function submit() {
+			while(t[0].tagName != 'TR')
+				t = t.parent();
+			var send = {
+				op:'categorysub_del',
+				id:t.attr('val')
+			};
+			dialog.process();
+			$.post(AJAX_SETUP, send, function(res) {
+				if(res.success) {
+					$('.spisok').html(res.html);
+					dialog.close();
+					_msg('Удалено.');
+				} else
+					dialog.abort();
+			}, 'json');
+		}
+	})
 
 	.ready(function() {
 		if($('#client').length) {
