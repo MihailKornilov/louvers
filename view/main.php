@@ -150,6 +150,15 @@ function GvaluesCreate() {//Составление файла G_values.js
 	xcache_unset(CACHE_PREFIX.'setup_global');
 }//GvaluesCreate()
 
+function _statusColor($id) {
+	$arr = array(
+		'0' => 'ffffff',
+		'1' => 'E8E8FF',
+		'2' => 'CCFFCC',
+		'3' => 'FFDDDD'
+	);
+	return $arr[$id];
+}//_statusColor()
 function _stockCategory($type_id=false) {//Список изделий для заявок
 	if(!defined('SC_LOADED') || $type_id === false) {
 		$key = CACHE_PREFIX.'stock_category';
@@ -176,7 +185,36 @@ function _stockCategory($type_id=false) {//Список изделий для заявок
 	return constant('SC_'.$type_id);
 }//_income()
 
-
+function _clientLink($arr, $fio=0, $tel=0) {//Добавление имени и ссылки клиента в массив или возврат по id
+	$clientArr = array(is_array($arr) ? 0 : $arr);
+	$ass = array();
+	if(is_array($arr)) {
+		foreach($arr as $r)
+			if(!empty($r['client_id'])) {
+				$clientArr[$r['client_id']] = $r['client_id'];
+				$ass[$r['client_id']][] = $r['id'];
+			}
+		unset($clientArr[0]);
+	}
+	if(!empty($clientArr)) {
+		$sql = "SELECT *
+		        FROM `louvers_client`
+				WHERE `id` IN (".implode(',', $clientArr).")";
+		$q = query($sql);
+		if(!is_array($arr)) {
+			if($r = mysql_fetch_assoc($q))
+				return $fio ? $r['fio'] : '<a href="'.URL.'&p=client&d=info&id='.$r['id'].'" class="'.($r['deleted'] ? ' deleted' : '').($tel && $r['telefon'] ? _tooltip($r['telefon'], -2, 'l') : '">').$r['fio'].'</a>';
+			return '';
+		}
+		while($r = mysql_fetch_assoc($q))
+			foreach($ass[$r['id']] as $id) {
+				$arr[$id]['client_link'] = '<a href="'.URL.'&p=client&d=info&id='.$r['id'].'" class="'.($r['deleted'] ? ' deleted' : '').($tel && $r['telefon'] ? _tooltip($r['telefon'], -2, 'l') : '">').$r['fio'].'</a>';
+				$arr[$id]['client_fio'] = $r['fio'];
+				$arr[$id]['client_tel'] = $r['telefon'];
+			}
+	}
+	return $arr;
+}//_clientLink()
 function clientBalansUpdate($client_id) {//Обновление баланса клиента
 //	$prihod = query_value("SELECT SUM(`sum`) FROM `money` WHERE !`deleted` AND `client_id`=".$client_id);
 //	$acc = query_value("SELECT SUM(`sum`) FROM `accrual` WHERE !`deleted` AND `client_id`=".$client_id);
@@ -373,6 +411,109 @@ function client_info() {
 			'</table>'.
 		'</div>';
 }//client_info()
+
+
+function zayav_product_test($product) {// Проверка корректности данных изделий при внесении в базу
+	if(empty($product))
+		return false;
+	$send = array();
+	foreach(explode(';', $product) as $r) {
+		$i = explode(':', $r);
+		if(!_isnum($i[0]))
+			return false;
+		if(!preg_match(REGEXP_NUMERIC, $i[1]))
+			return false;
+		if(!$i[2] = _cena($i[2]))
+			return false;
+		if(!$i[3] = _cena($i[3]))
+			return false;
+		if(!_isnum($i[4]))
+			return false;
+		$send[] = $i;
+	}
+	return empty($send) ? false : $send;
+}//zayav_product_test()
+function zayav() {
+	$data = zayav_spisok();
+	return
+	'<div id="zayav">'.
+		'<div class="result">'.$data['result'].'</div>'.
+		'<table class="tabLR">'.
+			'<tr><td id="spisok">'.$data['spisok'].
+				'<td class="right">r'.
+		'</table>'.
+	'</div>';
+}//zayav()
+function zayavFilter($v) {
+	return array(
+		'page' => _isnum(@$v['page']) ? $v['page'] : 1,
+		'limit' => _isnum(@$v['limit']) ? $v['limit'] : 20,
+		'client_id' => _isnum(@$v['client']),
+		'status' => _isnum(@$v['status'])
+	);
+}//zayavFilter()
+function zayav_spisok($v=array()) {
+	$filter = zayavFilter($v);
+
+	$cond = "!`deleted`";
+
+	if($filter['client_id'])
+		$cond .= " AND `client_id`=".$filter['client_id'];
+
+	$clear = '<a class="filter_clear">Очисить условия поиска</a>';
+	$send['all'] = query_value("SELECT COUNT(`id`) AS `all` FROM `louvers_zayav` WHERE ".$cond." LIMIT 1");
+	if($send['all'] == 0)
+		return array(
+			'all' => 0,
+			'result' => $clear.'Заявок не найдено',
+			'spisok' => '<div class="_empty">Заявок не найдено.</div>'
+		);
+
+	$send['result'] = $clear.'Показан'._end($send['all'], 'а', 'о').' '.$send['all'].' заяв'._end($send['all'], 'ка', 'ки', 'ок');
+
+	$page = $filter['page'];
+	$limit = $filter['limit'];
+	$start = ($page - 1) * $limit;
+	$sql = "SELECT *
+			FROM `louvers_zayav`
+			WHERE ".$cond."
+			ORDER BY `id` DESC
+			LIMIT ".$start.",".$limit;
+	$q = query($sql);
+	$zayav = array();
+	while($r = mysql_fetch_assoc($q))
+		$zayav[$r['id']] = $r;
+
+	$zayav = _clientLink($zayav, 0, 1);
+
+	$send['spisok'] = '';
+	foreach($zayav as $r) {
+		unset($r['client_tel']);
+		$send['spisok'] .=
+			'<div class="zayav_unit" style="background-color:#'._statusColor($r['status']).'" val="'.$r['id'].'">'.
+				($r['deleted'] ? '<div class="zdel">Заявка удалена</div>' : '').
+				'<div class="dtime">'.
+					'#'.(isset($r['find_id']) ? $r['find_id'] : $r['id']).'<br />'.
+					FullData($r['dtime_add'], 1).
+				'</div>'.
+				'<a class="name">Заявка №'.$r['id'].'</a>'.
+				'<table class="ztab">'.
+					'<tr><td class="label">Клиент:<td>'.$r['client_link'].
+				'</table>'.
+			'</div>';
+	}
+
+	if($start + $limit < $send['all']) {
+		$c = $send['all'] - $start - $limit;
+		$c = $c > $limit ? $limit : $c;
+		$send['spisok'] .=
+			'<div class="_next" val="'.($page + 1).'">'.
+				'<span>Показать ещё '.$c.' заяв'._end($c, 'ка', 'ки', 'ок').'</span>'.
+			'</div>';
+	}
+
+	return $send;
+}//zayav_spisok()
 
 
 function stockFilter($v) {

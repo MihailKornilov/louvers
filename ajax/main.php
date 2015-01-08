@@ -96,6 +96,50 @@ switch(@$_POST['op']) {
 		jsonSuccess();
 		break;
 
+	case 'zayav_add':
+		if(!$client_id = _isnum($_POST['client_id']))
+			jsonError();
+		if(!$product = zayav_product_test($_POST['product']))
+			jsonError();
+
+		$comm = win1251(htmlspecialchars(trim($_POST['comm'])));
+
+		$sql = "INSERT INTO `louvers_zayav` (
+					`client_id`,
+					`status_day`,
+					`viewer_id_add`
+				) VALUES (
+					".$client_id.",
+					CURRENT_TIMESTAMP,
+					".VIEWER_ID."
+				)";
+		query($sql);
+		$send['id'] = mysql_insert_id();
+
+		foreach($product as $r) {
+			$sql = "INSERT INTO `louvers_zayav_product` (
+						`zayav_id`,
+						`category_id`,
+						`category_sub_id`,
+						`size_x`,
+						`size_y`,
+						`count`
+					) VALUES (
+						".$send['id'].",
+						".$r[0].",
+						".$r[1].",
+						".$r[2].",
+						".$r[3].",
+						".$r[4]."
+					)";
+			query($sql);
+		}
+
+		_vkCommentAdd('zayav', $send['id'], $comm);
+
+		jsonSuccess($send);
+		break;
+
 	case 'stock_add'://Внесение новой позиции в склад
 		$category_id = _isnum($_POST['category_id']);
 		$name = win1251(htmlspecialchars(trim($_POST['name'])));

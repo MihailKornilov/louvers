@@ -193,14 +193,18 @@ $.fn.productList = function(o) {
 					attr = id + u.attr('val'),
 					pr = $('#' + attr + 'id').val(),
 					prsub = $('#' + attr + 'subid').val(),
+					x = _cena($('#' + attr + 'x').val()),
+					y = _cena($('#' + attr + 'y').val()),
 					count = $('#' + attr + 'count').val();
 				if(pr == 0)
 					continue;
+				if(!x || !y)
+					return 'size_error';
 				if(!REGEXP_NUMERIC.test(count) || count == 0)
 					return 'count_error';
-				send.push(pr + ':' + prsub + ':' + count);
+				send.push(pr + ':' + prsub + ':' + x + ':' + y + ':' + count);
 			}
-			return send.length == 0 ? false : send.join();
+			return send.length == 0 ? false : send.join(';');
 		}
 	}
 
@@ -219,13 +223,15 @@ $.fn.productList = function(o) {
 			attr_id = attr + 'id',
 			attr_subid = attr + 'subid',
 			attr_count = attr + 'count',
+			attr_x = attr + 'x',
+			attr_y = attr + 'y',
 			html = '<table id="ptab'+ num + '" class="ptab" val="'+ num + '"><tr>' +
 				'<td class="td">' +
 					'<input type="hidden" id="' + attr_id + '" value="' + (v[0] || 0) + '" />' +
 					'<input type="hidden" id="' + attr_subid + '" value="' + (v[1] || 0) + '" />' +
 					'<table class="doptab">' +
-						'<tr><td class="lab">Ширина:<td><input type="text" class="size_x" /> м.' +
-						'<tr><td class="lab">Высота:<td><input type="text" class="size_y" /> м.' +
+						'<tr><td class="lab">Ширина:<td><input type="text" id="' + attr_x + '" class="size" /> м.' +
+						'<tr><td class="lab">Высота:<td><input type="text" id="' + attr_y + '" class="size" /> м.' +
 						'<tr><td class="lab">Количество:<td><input type="text" id="' + attr_count + '" value="' + (v[2] || '') + '" class="count" maxlength="3" /> шт.' +
 					'</table>' +
 				'<td class="td">' + (num > 1 ? '<div class="img_del"></div>' : '') +
@@ -244,14 +250,15 @@ $.fn.productList = function(o) {
 					._select('remove')
 					.val(0);
 				if(id > 0 && CATEGORY_SUB_SPISOK[id])
-					subSel(id, attr_subid, attr_count);
-				$('#' + attr_count).val(id > 0 ? 1 : '').focus();
+					subSel(id, attr_subid, attr_x);
+				$('#' + attr_x).focus();
+				$('#' + attr_count).val(id ? 1 : '');
 			}
 		});
-		subSel(v[0] || 0, attr_subid, attr_count);
+		subSel(v[0] || 0, attr_subid, attr_x);
 		num++;
 	}
-	function subSel(id, attr_subid, attr_count) {
+	function subSel(id, attr_subid, attr_x) {
 		if(id == 0 || !CATEGORY_SUB_SPISOK[id])
 			return;
 		$('#' + attr_subid)._select({
@@ -259,7 +266,7 @@ $.fn.productList = function(o) {
 			title0:'Подкатегория не указана',
 			spisok:CATEGORY_SUB_SPISOK[id],
 			func:function() {
-				$('#' + attr_count).focus();
+				$('#' + attr_x).focus();
 			}
 		});
 	}
@@ -364,13 +371,14 @@ $(document)
 		function submit() {
 			var msg,
 				send = {
-					op:'zakaz_add',
+					op:'zayav_add',
 					client_id:$('#client_id').val(),
 					product:$('#product').productList('get'),
-					zakaz_txt:$('#zakaz_txt').val(),
 					comm:$('#comm').val()
 				};
 			if(send.client_id == 0) msg = 'Не выбран клиент';
+			else if(!send.product) msg = 'Не выбраны изделия';
+			else if(send.product == 'size_error') msg = 'Некорректно введён размер изделия';
 			else if(send.product == 'count_error') msg = 'Некорректно введено количество изделий';
 			else {
 				dialog.process();

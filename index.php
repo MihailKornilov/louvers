@@ -29,6 +29,7 @@ switch($_GET['p']) {
 		}
 		break;
 	case 'zayav':
+		$html .= zayav();
 		break;
 		switch(@$_GET['d']) {
 			case 'add': $html .= zayav_add(); break;
