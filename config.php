@@ -26,4 +26,5 @@ function _getSetupGlobal() {//Получение глобальных данных
 }//_getSetupGlobal()
 function _getVkUser() {//Получение данных о пользователе
 	$u = _viewer();
+	define('VIEWER_ADMIN', 0);
 }//_getVkUser()

@@ -56,14 +56,19 @@
 .zayav-add #comm{width:260px;height:40px}
 
 /*  атегории изделий при внесении за€вки */
-._product-list .ptab{padding-bottom:15px}
-._product-list .td{vertical-align:top}
+._product-list .ptab{
+	padding:6px;
+	background-color:#f2f2f2;
+	margin-bottom:8px;
+	border:#e7e7e7 solid 1px;
+}
 ._product-list ._select{margin-right:5px}
-._product-list .doptab{border-spacing:3px}
-._product-list .lab{font-size:10px;color:#555;text-align:right}
-._product-list .size{width:30px}
+._product-list .doptab{border-spacing:5px;margin-left:-5px;width:380px}
+._product-list .lab{font-size:10px;color:#555;text-align:right;width:110px}
+._product-list span.lab{display:inline-block;width:70px}
+._product-list .size{width:35px}
 ._product-list .count{width:20px}
-._product-list .img_del{margin:6px 0 0 6px}
+._product-list .img_del{float:right;margin-top:4px}
 ._product-list .add{display:inline-block;text-align:center;padding:4px 0 8px}
 
 
@@ -87,6 +92,24 @@
 .zayav_unit .dtime em{font-size:10px}
 .zayav_unit .ztab{border-spacing:2px;margin:4px 0 4px 8px}
 .zayav_unit .label{width:60px}
+.zayav_unit .product td{padding:1px 4px 1px 0;font-size:10px;color:#444}
+
+
+
+.zayav-info .content{margin:10px}
+.zayav-info .content .headName{margin:2px 12px 5px 5px}
+.zayav-info .tabmain{width:100%}
+.zayav-info .tabInfo{width:100%;margin:0 10px;border-spacing:7px}
+.zayav-info .label{width:80px}
+.zayav-info .status {
+	display:inline-block;
+	border:#ddd solid 1px;
+	text-align:center;
+	padding:2px 10px 3px;
+	color:#555;
+	cursor:pointer;
+}
+.zayav-info .dtime_add{font-size:10px;color:#999;text-align:right;margin:10px 0}
 
 
 #stock{min-height:500px}
@@ -125,5 +148,17 @@
 #setup_category .del{color:#888;cursor:help}
 #setup_category .set{width:35px}
 
+#setup_categorysub .back{color:#777}
 #setup_categorysub .headName{margin-top:15px}
-#setup_categorysub .name{width:250px}
+#setup_categorysub .name{width:310px}
+
+#setup_cloth .back{color:#777}
+#setup_cloth .headName{margin:15px 0 0 0}
+#setup_cloth .kod_head{font-weight:bold;margin:20px 0 5px 0}
+#setup_cloth .add{float:right;color:#68A}
+#setup_cloth em{color:#555;margin-bottom:30px;display:block}
+#setup_cloth ._spisok{margin-bottom:30px}
+#setup_cloth .name{width:363px}
+
+
+

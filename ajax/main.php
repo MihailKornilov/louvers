@@ -13,6 +13,39 @@ switch(@$_POST['op']) {
 		jsonSuccess();
 		break;
 
+	case 'client_sel':
+		if(!preg_match(REGEXP_WORDFIND, win1251($_POST['val'])))
+			$_POST['val'] = '';
+		if(!preg_match(REGEXP_NUMERIC, $_POST['client_id']))
+			$_POST['client_id'] = 0;
+		$val = win1251($_POST['val']);
+		$client_id = intval($_POST['client_id']);
+		$sql = "SELECT *
+				FROM `louvers_client`
+				WHERE !`deleted`".
+			(!empty($val) ? " AND (`fio` LIKE '%".$val."%' OR `telefon` LIKE '%".$val."%' OR `adres` LIKE '%".$val."%')" : '').
+			($client_id > 0 ? " AND `id`<=".$client_id : '')."
+				ORDER BY `id` DESC
+				LIMIT 50";
+		$q = query($sql);
+		$send['spisok'] = array();
+		while($r = mysql_fetch_assoc($q)) {
+			$unit = array(
+				'uid' => $r['id'],
+				'title' => utf8(htmlspecialchars_decode($r['fio'])),
+				'adres' => utf8(htmlspecialchars_decode($r['adres']))
+			);
+			$content = array();
+			if($r['telefon'])
+				$content[] = $r['telefon'];
+			if($r['adres'])
+				$content[] = $r['adres'];
+			if(!empty($content))
+				$unit['content'] = utf8($r['fio'].'<span>'.implode('<br />', $content).'</span>');
+			$send['spisok'][] = $unit;
+		}
+		jsonSuccess($send);
+		break;
 	case 'client_add':
 		$org = win1251(htmlspecialchars(trim($_POST['org'])));
 		$fio = win1251(htmlspecialchars(trim($_POST['fio'])));
@@ -123,6 +156,8 @@ switch(@$_POST['op']) {
 						`category_sub_id`,
 						`size_x`,
 						`size_y`,
+						`cloth_name`,
+						`cloth_color`,
 						`count`
 					) VALUES (
 						".$send['id'].",
@@ -130,12 +165,14 @@ switch(@$_POST['op']) {
 						".$r[1].",
 						".$r[2].",
 						".$r[3].",
-						".$r[4]."
+						".$r[4].",
+						".$r[5].",
+						".$r[6]."
 					)";
 			query($sql);
 		}
 
-		_vkCommentAdd('zayav', $send['id'], $comm);
+		_vkCommentAdd('louvers_zayav', $send['id'], $comm);
 
 		jsonSuccess($send);
 		break;

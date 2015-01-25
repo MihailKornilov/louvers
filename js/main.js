@@ -193,16 +193,26 @@ $.fn.productList = function(o) {
 					attr = id + u.attr('val'),
 					pr = $('#' + attr + 'id').val(),
 					prsub = $('#' + attr + 'subid').val(),
-					x = _cena($('#' + attr + 'x').val()),
-					y = _cena($('#' + attr + 'y').val()),
+					x = $('#' + attr + 'x').val(),
+					cloth_name = $('#' + attr + 'cloth_name').val(),
+					cloth_color = $('#' + attr + 'cloth_color').val(),
+					y = $('#' + attr + 'y').val(),
 					count = $('#' + attr + 'count').val();
 				if(pr == 0)
 					continue;
-				if(!x || !y)
+				if(!REGEXP_NUMERIC.test(x) || x == 0)
+					return 'size_error';
+				if(!REGEXP_NUMERIC.test(y) || y == 0)
 					return 'size_error';
 				if(!REGEXP_NUMERIC.test(count) || count == 0)
 					return 'count_error';
-				send.push(pr + ':' + prsub + ':' + x + ':' + y + ':' + count);
+				send.push(pr + ':' +
+						  prsub + ':' +
+						  x + ':' +
+						  y + ':' +
+						  cloth_name + ':' +
+						  cloth_color + ':' +
+						  count);
 			}
 			return send.length == 0 ? false : send.join(';');
 		}
@@ -222,20 +232,26 @@ $.fn.productList = function(o) {
 		var attr = id + num,
 			attr_id = attr + 'id',
 			attr_subid = attr + 'subid',
-			attr_count = attr + 'count',
 			attr_x = attr + 'x',
 			attr_y = attr + 'y',
-			html = '<table id="ptab'+ num + '" class="ptab" val="'+ num + '"><tr>' +
-				'<td class="td">' +
+			attr_cloth_name = attr + 'cloth_name',
+			attr_cloth_color = attr + 'cloth_color',
+			attr_count = attr + 'count',
+			html =
+			'<div id="ptab'+ num + '" class="ptab" val="'+ num + '"><tr>' +
+				'<div>' +
 					'<input type="hidden" id="' + attr_id + '" value="' + (v[0] || 0) + '" />' +
 					'<input type="hidden" id="' + attr_subid + '" value="' + (v[1] || 0) + '" />' +
-					'<table class="doptab">' +
-						'<tr><td class="lab">Ширина:<td><input type="text" id="' + attr_x + '" class="size" /> м.' +
-						'<tr><td class="lab">Высота:<td><input type="text" id="' + attr_y + '" class="size" /> м.' +
-						'<tr><td class="lab">Количество:<td><input type="text" id="' + attr_count + '" value="' + (v[2] || '') + '" class="count" maxlength="3" /> шт.' +
-					'</table>' +
-				'<td class="td">' + (num > 1 ? '<div class="img_del"></div>' : '') +
-				'</table>';
+					(num > 1 ? '<div class="img_del"></div>' : '') +
+				'</div>' +
+				'<table class="doptab">' +
+					'<tr><td class="lab">Ширина:<td><input type="text" id="' + attr_x + '" class="size" maxlength="5" /> мм.' +
+							'<span class="lab">Высота:</span> <input type="text" id="' + attr_y + '" class="size" maxlength="5" /> мм.' +
+					'<tr><td class="lab">Наименование ткани:<td><input type="hidden" id="' + attr_cloth_name + '" />' +
+					'<tr><td class="lab">Цвет ткани:<td><input type="hidden" id="' + attr_cloth_color + '" />' +
+					'<tr><td class="lab">Кол-во:<td><input type="text" id="' + attr_count + '" value="' + (v[2] || '') + '" class="count" maxlength="3" /> шт.' +
+				'</table>' +
+			'</div>';
 		add.before(html);
 		var ptab = $('#ptab' + num);
 		ptab.find('.img_del').click(function() {
@@ -250,25 +266,44 @@ $.fn.productList = function(o) {
 					._select('remove')
 					.val(0);
 				if(id > 0 && CATEGORY_SUB_SPISOK[id])
-					subSel(id, attr_subid, attr_x);
+					subSel(id);
 				$('#' + attr_x).focus();
+				$('#' + attr_cloth_name)._select([]);
+				$('#' + attr_cloth_name)._select(0);
+				$('#' + attr_cloth_color)._select([]);
+				$('#' + attr_cloth_color)._select(0);
 				$('#' + attr_count).val(id ? 1 : '');
 			}
 		});
-		subSel(v[0] || 0, attr_subid, attr_x);
-		num++;
-	}
-	function subSel(id, attr_subid, attr_x) {
-		if(id == 0 || !CATEGORY_SUB_SPISOK[id])
-			return;
-		$('#' + attr_subid)._select({
-			width:160,
-			title0:'Подкатегория не указана',
-			spisok:CATEGORY_SUB_SPISOK[id],
-			func:function() {
-				$('#' + attr_x).focus();
-			}
+		$('#' + attr_cloth_name)._select({
+			width:220,
+			title0:'Наименование не указано',
+			spisok:[]
 		});
+		$('#' + attr_cloth_color)._select({
+			width:220,
+			title0:'Цвет не указан',
+			spisok:[]
+		});
+		subSel(v[0] || 0);
+		num++;
+
+		function subSel(id) {
+			if(id == 0 || !CATEGORY_SUB_SPISOK[id])
+				return;
+			$('#' + attr_subid)._select({
+				width:160,
+				title0:'Подкатегория не указана',
+				spisok:CATEGORY_SUB_SPISOK[id],
+				func:function(sub) {
+					$('#' + attr_x).focus();
+					$('#' + attr_cloth_name)._select(CLOTH_NAME_SPISOK[sub] ? CLOTH_NAME_SPISOK[sub] : []);
+					$('#' + attr_cloth_name)._select(0);
+					$('#' + attr_cloth_color)._select(CLOTH_COLOR_SPISOK[sub] ? CLOTH_COLOR_SPISOK[sub] : []);
+					$('#' + attr_cloth_color)._select(0);
+				}
+			});
+		}
 	}
 	return t;
 };
@@ -401,6 +436,9 @@ $(document)
 					remove:1
 				});
 		}
+	})
+	.on('click', '.zayav_unit', function() {
+		document.location.href = URL + '&p=zayav&d=info&id=' + $(this).attr('val');
 	})
 
 
@@ -632,6 +670,240 @@ $(document)
 			$.post(AJAX_SETUP, send, function(res) {
 				if(res.success) {
 					$('.spisok').html(res.html);
+					dialog.close();
+					_msg('Удалено.');
+				} else
+					dialog.abort();
+			}, 'json');
+		}
+	})
+
+	.on('click', '#cloth_name_add', function() {
+		var t = $(this),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Наименование:<td><input id="name" type="text" maxlength="200" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Добавление наименования ткани',
+				content:html,
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'cloth_name_add',
+				category_sub_id:CATEGORY_SUB_ID,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указано наименование</SPAN>',
+					top:-47,
+					left:120,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('#name_spisok').html(res.html);
+						dialog.close();
+						_msg('Внесено.');
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '.cloth_name_edit', function() {
+		var t = $(this);
+		while(t[0].tagName != 'TR')
+			t = t.parent();
+		var id = t.attr('val'),
+			name = t.find('.name').html(),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Наименование:' +
+				'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Редактирование наименования ткани',
+				content:html,
+				butSubmit:'Сохранить',
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'cloth_name_edit',
+				id:id,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указано наименование</SPAN>',
+					top:-47,
+					left:131,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('#name_spisok').html(res.html);
+						dialog.close();
+						_msg('Сохранено.');
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '.cloth_name_del', function() {
+		var t = $(this),
+			dialog = _dialog({
+				top:90,
+				width:300,
+				head:'Удаление наименования ткани',
+				content:'<center><b>Подтвердите удаление.</b></center>',
+				butSubmit:'Удалить',
+				submit:submit
+			});
+		function submit() {
+			while(t[0].tagName != 'TR')
+				t = t.parent();
+			var send = {
+				op:'cloth_name_del',
+				id:t.attr('val')
+			};
+			dialog.process();
+			$.post(AJAX_SETUP, send, function(res) {
+				if(res.success) {
+					$('#name_spisok').html(res.html);
+					dialog.close();
+					_msg('Удалено.');
+				} else
+					dialog.abort();
+			}, 'json');
+		}
+	})
+
+	.on('click', '#cloth_color_add', function() {
+		var t = $(this),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Цвет:<td><input id="name" type="text" maxlength="200" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Добавление цвета ткани',
+				content:html,
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'cloth_color_add',
+				category_sub_id:CATEGORY_SUB_ID,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указан цвет</SPAN>',
+					top:-47,
+					left:120,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('#color_spisok').html(res.html);
+						dialog.close();
+						_msg('Внесено.');
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '.cloth_color_edit', function() {
+		var t = $(this);
+		while(t[0].tagName != 'TR')
+			t = t.parent();
+		var id = t.attr('val'),
+			name = t.find('.name').html(),
+			html = '<table class="setup-tab">' +
+				'<tr><td class="label r">Цвет:' +
+				'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
+				'</table>',
+			dialog = _dialog({
+				width:440,
+				head:'Редактирование цвета ткани',
+				content:html,
+				butSubmit:'Сохранить',
+				submit:submit
+			});
+		$('#name').focus().keyEnter(submit);
+		function submit() {
+			var send = {
+				op:'cloth_color_edit',
+				id:id,
+				name:$('#name').val()
+			};
+			if(!send.name) {
+				dialog.bottom.vkHint({
+					msg:'<SPAN class=red>Не указан цвет</SPAN>',
+					top:-47,
+					left:131,
+					indent:50,
+					show:1,
+					remove:1
+				});
+				$('#name').focus();
+			} else {
+				dialog.process();
+				$.post(AJAX_SETUP, send, function(res) {
+					if(res.success) {
+						$('#color_spisok').html(res.html);
+						dialog.close();
+						_msg('Сохранено.');
+					} else
+						dialog.abort();
+				}, 'json');
+			}
+		}
+	})
+	.on('click', '.cloth_color_del', function() {
+		var t = $(this),
+			dialog = _dialog({
+				top:90,
+				width:300,
+				head:'Удаление цвета ткани',
+				content:'<center><b>Подтвердите удаление.</b></center>',
+				butSubmit:'Удалить',
+				submit:submit
+			});
+		function submit() {
+			while(t[0].tagName != 'TR')
+				t = t.parent();
+			var send = {
+				op:'cloth_color_del',
+				id:t.attr('val')
+			};
+			dialog.process();
+			$.post(AJAX_SETUP, send, function(res) {
+				if(res.success) {
+					$('#color_spisok').html(res.html);
 					dialog.close();
 					_msg('Удалено.');
 				} else
