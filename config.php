@@ -8,7 +8,7 @@ _appAuth();
 
 require_once(DOCUMENT_ROOT.'/view/main.php');
 
-_dbConnect();
+//_dbConnect();
 _getSetupGlobal();
 _getVkUser();
 

@@ -127,131 +127,163 @@ switch(@$_POST['op']) {
 		jsonSuccess($send);
 		break;
 
-	case 'cloth_name_add':
+	case 'feature_add':
 		if(!$category_sub_id = _isnum($_POST['category_sub_id']))
 			jsonError();
+		if(!$name_id = _isnum($_POST['name_id']))
+			jsonError();
 		$name = win1251(htmlspecialchars(trim($_POST['name'])));
-		if(empty($name))
+		$kod = win1251(htmlspecialchars(trim($_POST['kod'])));
+		if(empty($kod))
 			jsonError();
 
-		$sql = "INSERT INTO `louvers_setup_cloth_name` (
+		$sql = "INSERT INTO `louvers_setup_feature` (
 					`category_sub_id`,
-					`name`
+					`name_id`,
+					`name`,
+					`kod`
 				) VALUES (
 					".$category_sub_id.",
-					'".addslashes($name)."'
+					".$name_id.",
+					'".addslashes($name)."',
+					'".addslashes($kod)."'
 				)";
 		query($sql);
 
-		xcache_unset(CACHE_PREFIX.'cloth_name');
+		xcache_unset(CACHE_PREFIX.'feature');
 		GvaluesCreate();
 
-		$send['html'] = utf8(setup_cloth_name($category_sub_id));
+		$send['html'] = utf8(setup_feature_spisok($category_sub_id));
 		jsonSuccess($send);
 		break;
-	case 'cloth_name_edit':
+	case 'feature_edit':
 		if(!$id = _isnum($_POST['id']))
 			jsonError();
-
+		if(!$category_sub_id = _isnum($_POST['category_sub_id']))
+			jsonError();
+		if(!$name_id = _isnum($_POST['name_id']))
+			jsonError();
 		$name = win1251(htmlspecialchars(trim($_POST['name'])));
-
-		if(empty($name))
+		$kod = win1251(htmlspecialchars(trim($_POST['kod'])));
+		if(empty($kod))
 			jsonError();
 
-		$sql = "SELECT * FROM `louvers_setup_cloth_name` WHERE `id`=".$id;
-		if(!$r = query_assoc($sql))
-			jsonError();
-
-		$sql = "UPDATE `louvers_setup_cloth_name`
-				SET `name`='".addslashes($name)."'
+		$sql = "UPDATE `louvers_setup_feature`
+				SET `name_id`=".$name_id.",
+					`name`='".addslashes($name)."',
+					`kod`='".addslashes($kod)."'
 				WHERE `id`=".$id;
 		query($sql);
 
-		xcache_unset(CACHE_PREFIX.'cloth_name');
+		xcache_unset(CACHE_PREFIX.'feature');
 		GvaluesCreate();
 
-		$send['html'] = utf8(setup_cloth_name($r['category_sub_id']));
+		$send['html'] = utf8(setup_feature_spisok($category_sub_id));
 		jsonSuccess($send);
 		break;
-	case 'cloth_name_del':
+	case 'feature_del':
 		if(!$id = _isnum($_POST['id']))
 			jsonError();
 
-		$sql = "SELECT * FROM `louvers_setup_cloth_name` WHERE `id`=".$id;
+		$sql = "SELECT * FROM `louvers_setup_feature` WHERE `id`=".$id;
 		if(!$r = query_assoc($sql))
 			jsonError();
 
-		$sql = "DELETE FROM `louvers_setup_cloth_name` WHERE `id`=".$id;
+		$sql = "SELECT COUNT(*) FROM `louvers_setup_feature_color` WHERE `feature_id`=".$id;
+		if(query_value($sql))
+			jsonError();
+
+		$sql = "DELETE FROM `louvers_setup_feature` WHERE `id`=".$id;
 		query($sql);
 
-		xcache_unset(CACHE_PREFIX.'cloth_name');
+		xcache_unset(CACHE_PREFIX.'feature');
 		GvaluesCreate();
 
-		$send['html'] = utf8(setup_cloth_name($r['category_sub_id']));
+		$send['html'] = utf8(setup_feature_spisok($r['category_sub_id']));
 		jsonSuccess($send);
 		break;
 
-	case 'cloth_color_add':
-		if(!$category_sub_id = _isnum($_POST['category_sub_id']))
+	case 'feature_color_add':
+		if(!$feature_id = _isnum($_POST['feature_id']))
 			jsonError();
 		$name = win1251(htmlspecialchars(trim($_POST['name'])));
 		if(empty($name))
 			jsonError();
+		$kod = win1251(htmlspecialchars(trim($_POST['kod'])));
+		if(empty($kod))
+			jsonError();
 
-		$sql = "INSERT INTO `louvers_setup_cloth_color` (
-					`category_sub_id`,
-					`name`
+		$sql = "SELECT * FROM `louvers_setup_feature` WHERE `id`=".$feature_id;
+		if(!$r = query_assoc($sql))
+			jsonError();
+
+
+		$sql = "INSERT INTO `louvers_setup_feature_color` (
+					`feature_id`,
+					`name`,
+					`kod`
 				) VALUES (
-					".$category_sub_id.",
-					'".addslashes($name)."'
+					".$feature_id.",
+					'".addslashes($name)."',
+					'".addslashes($kod)."'
 				)";
 		query($sql);
 
-		xcache_unset(CACHE_PREFIX.'cloth_color');
+		xcache_unset(CACHE_PREFIX.'feature_color');
 		GvaluesCreate();
 
-		$send['html'] = utf8(setup_cloth_color($category_sub_id));
+		$send['html'] = utf8(setup_feature_spisok($r['category_sub_id']));
 		jsonSuccess($send);
 		break;
-	case 'cloth_color_edit':
+	case 'feature_color_edit':
 		if(!$id = _isnum($_POST['id']))
 			jsonError();
 
 		$name = win1251(htmlspecialchars(trim($_POST['name'])));
+		$kod = win1251(htmlspecialchars(trim($_POST['kod'])));
 
 		if(empty($name))
 			jsonError();
 
-		$sql = "SELECT * FROM `louvers_setup_cloth_color` WHERE `id`=".$id;
+		$sql = "SELECT * FROM `louvers_setup_feature_color` WHERE `id`=".$id;
 		if(!$r = query_assoc($sql))
 			jsonError();
 
-		$sql = "UPDATE `louvers_setup_cloth_color`
-				SET `name`='".addslashes($name)."'
+		$sql = "SELECT * FROM `louvers_setup_feature` WHERE `id`=".$r['feature_id'];
+		if(!$r = query_assoc($sql))
+			jsonError();
+
+		$sql = "UPDATE `louvers_setup_feature_color`
+				SET `name`='".addslashes($name)."',
+					`kod`='".addslashes($kod)."'
 				WHERE `id`=".$id;
 		query($sql);
 
-		xcache_unset(CACHE_PREFIX.'cloth_color');
+		xcache_unset(CACHE_PREFIX.'feature_color');
 		GvaluesCreate();
 
-		$send['html'] = utf8(setup_cloth_color($r['category_sub_id']));
+		$send['html'] = utf8(setup_feature_spisok($r['category_sub_id']));
 		jsonSuccess($send);
 		break;
-	case 'cloth_color_del':
+	case 'feature_color_del':
 		if(!$id = _isnum($_POST['id']))
 			jsonError();
 
-		$sql = "SELECT * FROM `louvers_setup_cloth_color` WHERE `id`=".$id;
+		$sql = "SELECT * FROM `louvers_setup_feature_color` WHERE `id`=".$id;
 		if(!$r = query_assoc($sql))
 			jsonError();
 
-		$sql = "DELETE FROM `louvers_setup_cloth_color` WHERE `id`=".$id;
+		$sql = "SELECT * FROM `louvers_setup_feature` WHERE `id`=".$r['feature_id'];
+		if(!$r = query_assoc($sql))
+			jsonError();
+
+		$sql = "DELETE FROM `louvers_setup_feature_color` WHERE `id`=".$id;
 		query($sql);
 
-		xcache_unset(CACHE_PREFIX.'cloth_color');
+		xcache_unset(CACHE_PREFIX.'feature_color');
 		GvaluesCreate();
 
-		$send['html'] = utf8(setup_cloth_color($r['category_sub_id']));
+		$send['html'] = utf8(setup_feature_spisok($r['category_sub_id']));
 		jsonSuccess($send);
 		break;
 }

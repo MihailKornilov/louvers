@@ -128,8 +128,7 @@ function GvaluesCreate() {//Составление файла G_values.js
 	$save = 'function _toAss(s){var a=[];for(var n=0;n<s.length;a[s[n].uid]=s[n].title,n++);return a}'.
 		"\n".'var CATEGORY_SPISOK='.query_selJson("SELECT `id`,`name` FROM `louvers_setup_category` ORDER BY `sort` ASC").','.
 		"\n".'CATEGORY_SUB_SPISOK='.Gvalues_obj('louvers_setup_category_sub').','.
-		"\n".'CLOTH_NAME_SPISOK='.Gvalues_obj('louvers_setup_cloth_name', 'category_sub_id').','.
-		"\n".'CLOTH_COLOR_SPISOK='.Gvalues_obj('louvers_setup_cloth_color', 'category_sub_id').','.
+		"\n".'FEATURE_SPISOK='._selJson(_feature()).','.
 		"\n".'MEASURE_SPISOK=[{uid:1,title:"шт"},{uid:2,title:"м"}];';
 
 	$fp = fopen(APP_PATH.'/js/G_values.js', 'w+');
@@ -203,6 +202,15 @@ function _categorySub($category_id=false) {//Список изделий для заявок
 	}
 	return $category_id !== false ? constant('CATEGORY_SUB_'.$category_id) : $arr;
 }//_categorySub()
+function _feature($id=0) {
+	$arr = array(
+		1 => 'Ткань',
+		2 => 'Лента',
+		3 => 'Пластик',
+		4 => 'Алюмиий'
+	);
+	return $id ? $arr[$id] : $arr;
+}//_feature()
 
 function _clientLink($arr, $fio=0, $tel=0) {//Добавление имени и ссылки клиента в массив или возврат по id
 	$clientArr = array(is_array($arr) ? 0 : $arr);
@@ -456,7 +464,7 @@ function zayav_product_test($product) {// Проверка корректности данных изделий п
 	}
 	return empty($send) ? false : $send;
 }//zayav_product_test()
-function zayav_product_spisok($zayav, $type='html') {
+function zayav_product_spisok($zayav) {
 	$sql = "SELECT * FROM `louvers_zayav_product` WHERE `zayav_id` IN (".implode(',', array_keys($zayav)).") ORDER BY `zayav_id`,`id`";
 	$q = query($sql);
 	while($r = mysql_fetch_assoc($q)) {
@@ -470,13 +478,23 @@ function zayav_product_spisok($zayav, $type='html') {
 	}
 	foreach($zayav as $id => $z) {
 		$tab = '';
-		foreach($z['product_ids'] as $r)
+		$json = array();
+		foreach($z['product_ids'] as $r) {
 			$tab .=
-				'<tr><td>'._category($r['category_id']).
-						($r['category_sub_id'] ? ' '._categorySub($r['category_sub_id']) : '').':'.
+				'<tr><td>'._category($r['category_id']) .
+						($r['category_sub_id'] ? ' '._categorySub($r['category_sub_id']) : '').':' .
 					'<td>'.$r['count'].' шт.';
-
-		$zayav[$id]['product'] = '<table class="product">' . $tab . '</table>';
+			$json[] = $r['id'].','.
+					  $r['category_id'].','.
+					  $r['category_sub_id'].','.
+					  $r['size_x'].','.
+					  $r['size_y'].','.
+					  $r['cloth_name'].','.
+					  $r['cloth_color'].','.
+					  $r['count'];
+		}
+		$zayav[$id]['product'] = '<table class="product">'.$tab.'</table>';
+		$zayav[$id]['json'] = implode(',', $json);
 	}
 
 	return $zayav;
@@ -572,11 +590,21 @@ function zayav_info($zayav_id) {
 	if(!$z = mysql_fetch_assoc(query($sql)))
 		return _noauth('Заявки не существует.');
 
+	$client = query_assoc("SELECT * FROM `louvers_client` WHERE !`deleted` AND `id`=".$z['client_id']);
+
 	$product = zayav_product_spisok(array($zayav_id => $z));
 	$z = $product[$zayav_id];
 
 	return
-	'<div class="zayav-info">'.
+		'<script type="text/javascript">'.
+			'var ZAYAV={'.
+				'id:'.$zayav_id.','.
+				'client_fio:"'.$client['fio'].'",'.
+				'product:['.zayav_product_spisok($z['id'], 'json').']'.
+			'};'.
+		'</script>'.
+
+		'<div class="zayav-info">'.
 		'<div id="dopLinks">'.
 			'<a class="link sel zinfo">Информация</a>'.
 		(!$z['deleted'] ?
@@ -770,10 +798,10 @@ function setup() {
 				$left = setup_category_sub($id);
 			else $left = 'Неверный id.';
 			break;
-		case 'cloth':
+		case 'feature':
 			$d = 'category';
 			if($id = _isnum(@$_GET['id']))
-				$left = setup_cloth($id);
+				$left = setup_feature($id);
 			else $left = 'Неверный id.';
 			break;
 	}
@@ -861,7 +889,7 @@ function setup_category_sub_spisok($id) {
 			'<th>';
 	while($r = mysql_fetch_assoc($q))
 		$send .= '<tr val="'.$r['id'].'">'.
-			'<td class="name"><a href="'.URL.'&p=setup&d=cloth&id='.$r['id'].'">'.$r['name'].'</a>'.
+			'<td class="name"><a href="'.URL.'&p=setup&d=feature&id='.$r['id'].'">'.$r['name'].'</a>'.
 			'<td class="zayav">'.
 			'<td><div class="img_edit"></div>'.
 				'<div class="img_del"></div>';
@@ -869,7 +897,7 @@ function setup_category_sub_spisok($id) {
 	return $send;
 }//setup_categorysub_spisok()
 
-function setup_cloth($id) {
+function setup_feature($id) {
 	$sql = "SELECT * FROM `louvers_setup_category_sub` WHERE `id`=".$id;
 	if(!$sub = query_assoc($sql))
 		return 'Подкатегории не существует.';
@@ -880,48 +908,56 @@ function setup_cloth($id) {
 
 	return
 	'<script type="text/javascript">var CATEGORY_SUB_ID='.$id.';</script>'.
-	'<div id="setup_cloth">'.
+	'<div id="setup_feature">'.
 		'<a class="back" href="'.URL.'&p=setup&d=categorysub&id='.$cat['id'].'"><< назад к <b>'.$cat['name'].'</b></a>'.
 		'<div class="headName">'.$cat['name'].' - '.$sub['name'].'</div>'.
-		'<div class="kod_head">Наименование ткани + код:<a class="add" id="cloth_name_add">Добавить наименование ткани</a></div>'.
-		'<div id="name_spisok">'.setup_cloth_name($id).'</div>'.
-		'<div class="kod_head">Цвет ткани + код:<a class="add" id="cloth_color_add">Добавить цвет ткани</a></div>'.
-		'<div id="color_spisok">'.setup_cloth_color($id).'</div>'.
+		'<div class="kod_head">Дополнительные характеристики:<a class="add" id="feature_add">Добавить</a></div>'.
+		'<div id="feature_spisok">'.setup_feature_spisok($id).'</div>'.
 	'</div>';
-}//setup_cloth()
-function setup_cloth_name($id) {
+}//setup_feature()
+function setup_feature_spisok($id) {
 	$sql = "SELECT *
-			FROM `louvers_setup_cloth_name`
+			FROM `louvers_setup_feature`
 			WHERE `category_sub_id`=".$id."
-			ORDER BY `name`";
+			ORDER BY `name_id`,`name`";
 	$q = query($sql);
 	if(!mysql_num_rows($q))
-		return '<em>Наименования тканей не заданы.</em>';
+		return '<em>Не определены.</em>';
+	$feature = array();
+	while($r = mysql_fetch_assoc($q)) {
+		$r['color'] = array();
+		$feature[$r['id']] = $r;
+	}
 
-	$send = '<table class="_spisok">';
-	while($r = mysql_fetch_assoc($q))
-		$send .= '<tr val="'.$r['id'].'">'.
-			'<td class="name">'.$r['name'].
-			'<td><div class="img_edit cloth_name_edit"></div>'.
-				'<div class="img_del cloth_name_del"></div>';
-	$send .= '</table>';
-	return $send;
-}//setup_cloth_name()
-function setup_cloth_color($id) {
 	$sql = "SELECT *
-			FROM `louvers_setup_cloth_color`
-			WHERE `category_sub_id`=".$id."
-			ORDER BY `name`";
+			FROM `louvers_setup_feature_color`
+			WHERE `feature_id` IN (".(implode(',', array_keys($feature))).")
+			ORDER BY `feature_id`,`name`";
 	$q = query($sql);
-	if(!mysql_num_rows($q))
-		return '<em>Цвета тканей не заданы.</em>';
+	while($r = mysql_fetch_assoc($q))
+		$feature[$r['feature_id']]['color'][] =
+			'<div class="color">'.
+				'<input type="hidden" id="color_name_'.$r['id'].'" value="'.addslashes($r['name']).'" />'.
+				'<input type="hidden" id="color_kod_'.$r['id'].'" value="'.addslashes($r['kod']).'" />'.
+				'<span>'.$r['name'].'</span>код: '.$r['kod'].
+				'<a class="color_edit" val="'.$r['id'].'">изменить</a>'.
+				'<a class="color_del" val="'.$r['id'].'">удалить</a>'.
+			'</div>';
 
 	$send = '<table class="_spisok">';
-	while($r = mysql_fetch_assoc($q))
-		$send .= '<tr val="'.$r['id'].'">'.
-			'<td class="name">'.$r['name'].
-			'<td><div class="img_edit cloth_color_edit"></div>'.
-				'<div class="img_del cloth_color_del"></div>';
+	foreach($feature as $r)
+		$send .=
+			'<input type="hidden" id="name_id_'.$r['id'].'" value="'.$r['name_id'].'" />'.
+			'<input type="hidden" id="name_'.$r['id'].'" value="'.addslashes($r['name']).'" />'.
+			'<input type="hidden" id="kod_'.$r['id'].'" value="'.$r['kod'].'" />'.
+			'<tr val="'.$r['id'].'">'.
+				'<td class="name">'.
+					'<u>'._feature($r['name_id']).'</u><b>'.$r['name'].'</b>код: '.$r['kod'].
+					'<a class="color_add">+ цвет</a>'.
+					implode('', $r['color']).
+				'<td class="edit">'.
+					'<div class="img_edit'._tooltip('Изменить', -32).'</div>'.
+					(empty($r['color']) ? '<div class="img_del'._tooltip('Удалить', -29).'</div>' : '');
 	$send .= '</table>';
 	return $send;
-}//setup_cloth_color()
+}//setup_feature_spisok()

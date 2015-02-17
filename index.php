@@ -30,7 +30,7 @@ switch($_GET['p']) {
 		break;
 	case 'zayav':
 		switch(@$_GET['d']) {
-			case 'add': $html .= zayav_add(); break;
+//			case 'add': $html .= zayav_add(); break;
 			case 'info':
 				if(!preg_match(REGEXP_NUMERIC, $_GET['id'])) {
 					$html .= 'Страницы не существует';

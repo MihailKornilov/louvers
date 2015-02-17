@@ -152,13 +152,25 @@
 #setup_categorysub .headName{margin-top:15px}
 #setup_categorysub .name{width:310px}
 
-#setup_cloth .back{color:#777}
-#setup_cloth .headName{margin:15px 0 0 0}
-#setup_cloth .kod_head{font-weight:bold;margin:20px 0 5px 0}
-#setup_cloth .add{float:right;color:#68A}
-#setup_cloth em{color:#555;margin-bottom:30px;display:block}
-#setup_cloth ._spisok{margin-bottom:30px}
-#setup_cloth .name{width:363px}
+#setup_feature .back{color:#777}
+#setup_feature .headName{margin:15px 0 0 0}
+#setup_feature .kod_head{font-weight:bold;margin:20px 0 5px 0}
+#setup_feature .add{float:right;color:#68A}
+#setup_feature em{color:#555;margin-bottom:30px;display:block}
+#setup_feature .name{width:363px}
+#setup_feature .name u{margin-right:15px}
+#setup_feature .name b{margin-right:15px}
+#setup_feature .edit{vertical-align:top}
+#setup_feature .color_add{float:right;color:#ccc}
+#setup_feature .name:hover .color_add{color:#447}
+#setup_feature .color{padding:1px 0 1px 20px;font-size:10px;color:#555}
+#setup_feature .color span{margin-right:15px;font-size:10px}
+#setup_feature .color:hover{background-color:#ffb}
+#setup_feature .color:not(:hover) .color_edit,
+#setup_feature .color:not(:hover) .color_del{display:none}
+#setup_feature .color_edit{font-size:10px;margin-left:10px}
+#setup_feature .color_del{font-size:10px;color:#b22;margin-left:5px}
+
 
 
 

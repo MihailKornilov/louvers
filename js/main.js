@@ -607,7 +607,7 @@ $(document)
 		while(t[0].tagName != 'TR')
 			t = t.parent();
 		var id = t.attr('val'),
-			name = t.find('.name').html(),
+			name = t.find('.name a').html(),
 			html = '<table class="setup-tab">' +
 				'<tr><td class="label r">Наименование:' +
 				'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
@@ -678,39 +678,46 @@ $(document)
 		}
 	})
 
-	.on('click', '#cloth_name_add', function() {
+	.on('click', '#feature_add', function() {
 		var t = $(this),
 			html = '<table class="setup-tab">' +
-				'<tr><td class="label r">Наименование:<td><input id="name" type="text" maxlength="200" />' +
+				'<tr><td><input type="hidden" id="name_id" />' +
+					'<td><input type="text" id="name" maxlength="200" />' +
+				'<tr><td class="label r">Код:<td><input type="text" id="kod" style="width:55px" maxlength="8" />' +
 				'</table>',
 			dialog = _dialog({
-				width:440,
-				head:'Добавление наименования ткани',
+				width:410,
+				head:'Добавление новой характеристики',
 				content:html,
 				submit:submit
 			});
-		$('#name').focus().keyEnter(submit);
+		$('#name').focus();
+		$('#name,#kod').keyEnter(submit);
+		$('#name_id')._select({
+			width:80,
+			title0:'---',
+			spisok:FEATURE_SPISOK,
+			func:function() {
+				$('#name').focus();
+			}
+		});
 		function submit() {
 			var send = {
-				op:'cloth_name_add',
+				op:'feature_add',
 				category_sub_id:CATEGORY_SUB_ID,
-				name:$('#name').val()
+				name_id:$('#name_id').val() * 1,
+				name:$('#name').val(),
+				kod:$('#kod').val()
 			};
-			if(!send.name) {
-				dialog.bottom.vkHint({
-					msg:'<SPAN class=red>Не указано наименование</SPAN>',
-					top:-47,
-					left:120,
-					indent:50,
-					show:1,
-					remove:1
-				});
-				$('#name').focus();
+			if(!send.name_id) err('Не выбрано название характеристики');
+			else if(!send.kod) {
+				err('Не указан код');
+				$('#kod').focus();
 			} else {
 				dialog.process();
 				$.post(AJAX_SETUP, send, function(res) {
 					if(res.success) {
-						$('#name_spisok').html(res.html);
+						$('#feature_spisok').html(res.html);
 						dialog.close();
 						_msg('Внесено.');
 					} else
@@ -718,46 +725,63 @@ $(document)
 				}, 'json');
 			}
 		}
+		function err(msg) {
+			dialog.bottom.vkHint({
+				msg:'<SPAN class=red>' + msg + '</SPAN>',
+				top:-47,
+				left:100,
+				indent:50,
+				show:1,
+				remove:1
+			});
+		}
 	})
-	.on('click', '.cloth_name_edit', function() {
+	.on('click', '#feature_spisok .img_edit', function() {
 		var t = $(this);
 		while(t[0].tagName != 'TR')
 			t = t.parent();
 		var id = t.attr('val'),
-			name = t.find('.name').html(),
 			html = '<table class="setup-tab">' +
-				'<tr><td class="label r">Наименование:' +
-				'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
+				'<tr><td><input type="hidden" id="name_id" value="' + $('#name_id_' + id).val() + '" />' +
+					'<td><input type="text" id="name" maxlength="200" value="' + $('#name_' + id).val() + '" />' +
+				'<tr><td class="label r">Код:' +
+					'<td><input type="text" id="kod" style="width:55px" maxlength="8" value="' + $('#kod_' + id).val() + '" />' +
 				'</table>',
 			dialog = _dialog({
 				width:440,
-				head:'Редактирование наименования ткани',
+				head:'Редактирование характеристики',
 				content:html,
 				butSubmit:'Сохранить',
 				submit:submit
 			});
-		$('#name').focus().keyEnter(submit);
+		$('#name').focus();
+		$('#name,#kod').keyEnter(submit);
+		$('#name_id')._select({
+			width:70,
+			title0:'---',
+			spisok:FEATURE_SPISOK,
+			func:function() {
+				$('#name').focus();
+			}
+		});
 		function submit() {
 			var send = {
-				op:'cloth_name_edit',
+				op:'feature_edit',
 				id:id,
-				name:$('#name').val()
+				category_sub_id:CATEGORY_SUB_ID,
+				name_id:$('#name_id').val() * 1,
+				name:$('#name').val(),
+				kod:$('#kod').val()
 			};
-			if(!send.name) {
-				dialog.bottom.vkHint({
-					msg:'<SPAN class=red>Не указано наименование</SPAN>',
-					top:-47,
-					left:131,
-					indent:50,
-					show:1,
-					remove:1
-				});
-				$('#name').focus();
+			if(!send.name_id) err('Не выбрано название характеристики');
+			else if(!send.kod) {
+				err('Не указан код');
+				$('#kod').focus();
 			} else {
 				dialog.process();
 				$.post(AJAX_SETUP, send, function(res) {
 					if(res.success) {
-						$('#name_spisok').html(res.html);
+						$('#feature_spisok').html(res.html);
 						dialog.close();
 						_msg('Сохранено.');
 					} else
@@ -765,13 +789,23 @@ $(document)
 				}, 'json');
 			}
 		}
+		function err(msg) {
+			dialog.bottom.vkHint({
+				msg:'<SPAN class=red>' + msg + '</SPAN>',
+				top:-47,
+				left:100,
+				indent:50,
+				show:1,
+				remove:1
+			});
+		}
 	})
-	.on('click', '.cloth_name_del', function() {
+	.on('click', '#feature_spisok .img_del', function() {
 		var t = $(this),
 			dialog = _dialog({
 				top:90,
 				width:300,
-				head:'Удаление наименования ткани',
+				head:'Удаление характеристики',
 				content:'<center><b>Подтвердите удаление.</b></center>',
 				butSubmit:'Удалить',
 				submit:submit
@@ -780,13 +814,13 @@ $(document)
 			while(t[0].tagName != 'TR')
 				t = t.parent();
 			var send = {
-				op:'cloth_name_del',
+				op:'feature_del',
 				id:t.attr('val')
 			};
 			dialog.process();
 			$.post(AJAX_SETUP, send, function(res) {
 				if(res.success) {
-					$('#name_spisok').html(res.html);
+					$('#feature_spisok').html(res.html);
 					dialog.close();
 					_msg('Удалено.');
 				} else
@@ -795,23 +829,33 @@ $(document)
 		}
 	})
 
-	.on('click', '#cloth_color_add', function() {
-		var t = $(this),
+	.on('click', '#feature_spisok .color_add', function() {
+		var t = $(this);
+		while(t[0].tagName != 'TR')
+			t = t.parent();
+		var id = t.attr('val'),
+			label = t.find('u').html(),
+			name = t.find('b').html(),
 			html = '<table class="setup-tab">' +
-				'<tr><td class="label r">Цвет:<td><input id="name" type="text" maxlength="200" />' +
+					'<tr><td class="label r">' + label + ':<td><b>' + name + '</b>' +
+					'<tr><td class="label r">Цвет:<td><input id="name" type="text" maxlength="200" />' +
+					'<tr><td class="label r">Код:<td><input type="text" id="kod" style="width:55px" maxlength="8" />' +
 				'</table>',
 			dialog = _dialog({
-				width:440,
-				head:'Добавление цвета ткани',
+				top:40,
+				width:400,
+				head:'Добавление цвета',
 				content:html,
 				submit:submit
 			});
-		$('#name').focus().keyEnter(submit);
+		$('#name').focus();
+		$('#name,#kod').keyEnter(submit);
 		function submit() {
 			var send = {
-				op:'cloth_color_add',
-				category_sub_id:CATEGORY_SUB_ID,
-				name:$('#name').val()
+				op:'feature_color_add',
+				feature_id:id,
+				name:$('#name').val(),
+				kod:$('#kod').val()
 			};
 			if(!send.name) {
 				dialog.bottom.vkHint({
@@ -827,7 +871,7 @@ $(document)
 				dialog.process();
 				$.post(AJAX_SETUP, send, function(res) {
 					if(res.success) {
-						$('#color_spisok').html(res.html);
+						$('#feature_spisok').html(res.html);
 						dialog.close();
 						_msg('Внесено.');
 					} else
@@ -836,35 +880,37 @@ $(document)
 			}
 		}
 	})
-	.on('click', '.cloth_color_edit', function() {
+	.on('click', '#feature_spisok .color_edit', function() {
 		var t = $(this);
-		while(t[0].tagName != 'TR')
-			t = t.parent();
 		var id = t.attr('val'),
-			name = t.find('.name').html(),
+			label = t.find('u').html(),
+			name = t.find('b').html(),
 			html = '<table class="setup-tab">' +
-				'<tr><td class="label r">Цвет:' +
-				'<td><input id="name" type="text" maxlength="200" value="' + name + '" />' +
+				'<tr><td class="label r">Цвет:<td><input id="name" type="text" maxlength="200" value="' + $('#color_name_' + id).val() + '" />' +
+				'<tr><td class="label r">Код:<td><input type="text" id="kod" style="width:55px" maxlength="8" value="' + $('#color_kod_' + id).val() + '" />' +
 				'</table>',
 			dialog = _dialog({
-				width:440,
-				head:'Редактирование цвета ткани',
+				top:40,
+				width:400,
+				head:'Редактирование цвета',
 				content:html,
 				butSubmit:'Сохранить',
 				submit:submit
 			});
-		$('#name').focus().keyEnter(submit);
+		$('#name').focus();
+		$('#name,#kod').keyEnter(submit);
 		function submit() {
 			var send = {
-				op:'cloth_color_edit',
+				op:'feature_color_edit',
 				id:id,
-				name:$('#name').val()
+				name:$('#name').val(),
+				kod:$('#kod').val()
 			};
 			if(!send.name) {
 				dialog.bottom.vkHint({
 					msg:'<SPAN class=red>Не указан цвет</SPAN>',
 					top:-47,
-					left:131,
+					left:120,
 					indent:50,
 					show:1,
 					remove:1
@@ -874,7 +920,7 @@ $(document)
 				dialog.process();
 				$.post(AJAX_SETUP, send, function(res) {
 					if(res.success) {
-						$('#color_spisok').html(res.html);
+						$('#feature_spisok').html(res.html);
 						dialog.close();
 						_msg('Сохранено.');
 					} else
@@ -883,27 +929,25 @@ $(document)
 			}
 		}
 	})
-	.on('click', '.cloth_color_del', function() {
+	.on('click', '#feature_spisok .color_del', function() {
 		var t = $(this),
 			dialog = _dialog({
 				top:90,
 				width:300,
-				head:'Удаление цвета ткани',
+				head:'Удаление цвета',
 				content:'<center><b>Подтвердите удаление.</b></center>',
 				butSubmit:'Удалить',
 				submit:submit
 			});
 		function submit() {
-			while(t[0].tagName != 'TR')
-				t = t.parent();
 			var send = {
-				op:'cloth_color_del',
+				op:'feature_color_del',
 				id:t.attr('val')
 			};
 			dialog.process();
 			$.post(AJAX_SETUP, send, function(res) {
 				if(res.success) {
-					$('#color_spisok').html(res.html);
+					$('#feature_spisok').html(res.html);
 					dialog.close();
 					_msg('Удалено.');
 				} else
@@ -1001,6 +1045,54 @@ $(document)
 						} else
 							dialog.abort();
 					}, 'json');
+				}
+			});
+		}
+
+		if($('.zayav-info').length) {
+			$('.edit').click(function() {
+				var html = '<table class="zayav-info-edit">' +
+						'<tr><td class="label">Клиент:      <td>' + ZAYAV.client_fio +
+						'<tr><td class="label topi">Изделие:<td id="product">' +
+						'</table>',
+					dialog = _dialog({
+						width:500,
+						top:30,
+						head:ZAYAV.head + ' - Редактирование',
+						content:html,
+						butSubmit:'Сохранить',
+						submit:submit
+					});
+				$('#product').productList(ZAYAV.product);
+				function submit() {
+					var msg,
+						send = {
+							op:'zakaz_edit',
+							zayav_id:ZAYAV.id,
+							product:$('#product').productList('get')
+						};
+					if(!send.product) msg = 'Не указаны изделия';
+					else if(send.product == 'count_error') msg = 'Некорректно введено количество изделий';
+					else {
+						dialog.process();
+						$.post(AJAX_MAIN, send, function(res) {
+							if(res.success) {
+								dialog.close();
+								_msg('Данные изменены!');
+								document.location.reload();
+							} else
+								dialog.abort();
+						}, 'json');
+					}
+					if(msg)
+						dialog.bottom.vkHint({
+							msg:'<SPAN class="red">' + msg + '</SPAN>',
+							top:-47,
+							left:161,
+							indent:40,
+							show:1,
+							remove:1
+						});
 				}
 			});
 		}
